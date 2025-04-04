@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Todas as Transações</h2>
+<a href="{{ url_for('.adicionar_transacao') }}" class="btn btn-primary mb-3">Adicionar Transação</a>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Data</th>
+            <th>Descrição</th>
+            <th>Categoria</th>
+            <th>Valor</th>
+            <th>Tipo</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for transacao in transacoes %}
+        <tr>
+            <td>{{ transacao.data.strftime('%d/%m/%Y') }}</td>
+            <td>{{ transacao.descricao }}</td>
+            <td>{{ transacao.categoria_rel.nome }}</td>
+            <td class="{{ 'text-success' if transacao.tipo == 'receita' else 'text-danger' }}">
+                R$ {{ "%.2f"|format(transacao.valor) }}
+            </td>
+            <td>{{ transacao.tipo|capitalize }}</td>
+            <td>
+                <a href="{{ url_for('main.editar_transacao', id=transacao.id) }}"
+                    class="btn btn-sm btn-warning">Editar</a>
+                <a href="{{ url_for('main.excluir_transacao', id=transacao.id) }}" class="btn btn-sm btn-danger"
+                    onclick="return confirm('Tem certeza que deseja excluir esta transação?')">Excluir</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

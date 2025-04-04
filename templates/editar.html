@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Editar Transação</h2>
+
+<form method="POST">
+    <div class="mb-3">
+        <label for="descricao" class="form-label">Descrição</label>
+        <input type="text" class="form-control" id="descricao" name="descricao" value="{{ transacao.descricao }}"
+            required>
+    </div>
+
+    <div class="mb-3">
+        <label for="valor" class="form-label">Valor</label>
+        <input type="number" step="0.01" class="form-control" id="valor" name="valor" value="{{ transacao.valor }}"
+            required>
+    </div>
+
+    <div class="mb-3">
+        <label for="tipo" class="form-label">Tipo</label>
+        <select class="form-select" id="tipo" name="tipo" required>
+            <option value="receita" {% if transacao.tipo=='receita' %}selected{% endif %}>Receita</option>
+            <option value="despesa" {% if transacao.tipo=='despesa' %}selected{% endif %}>Despesa</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="categoria" class="form-label">Categoria</label>
+        <select class="form-select" id="categoria" name="categoria" required>
+            {% for categoria in categorias %}
+            <option value="{{ categoria.id }}" {% if categoria.id==transacao.categoria_id %}selected{% endif %}>
+                {{ categoria.nome }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="data" class="form-label">Data</label>
+        <input type="date" class="form-control" id="data" name="data" value="{{ transacao.data.strftime('%Y-%m-%d') }}"
+            required>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Atualizar</button>
+    <a href="{{ url_for('main.listar_transacoes') }}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

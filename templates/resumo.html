@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Resumo Financeiro Detalhado</h2>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <h4>Por Categoria</h4>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Categoria</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for categoria, total in resumo_categorias %}
+                <tr>
+                    <td>{{ categoria }}</td>
+                    <td>R$ {{ "%.2f"|format(total) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="col-md-6">
+        <h4>Últimos 30 Dias</h4>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Descrição</th>
+                    <th>Valor</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transacao in transacoes_recentes %}
+                <tr>
+                    <td>{{ transacao.data.strftime('%d/%m/%Y') }}</td>
+                    <td>{{ transacao.descricao }}</td>
+                    <td class="{{ 'text-success' if transacao.tipo == 'receita' else 'text-danger' }}">
+                        R$ {{ "%.2f"|format(transacao.valor) }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Resumo Financeiro</h2>
+
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-header">Saldo Total</div>
+            <div class="card-body">
+                <h5 class="card-title">R$ {{ "%.2f"|format(saldo) }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-header">Receitas</div>
+            <div class="card-body">
+                <h5 class="card-title">R$ {{ "%.2f"|format(receitas) }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-danger mb-3">
+            <div class="card-header">Despesas</div>
+            <div class="card-body">
+                <h5 class="card-title">R$ {{ "%.2f"|format(despesas) }}</h5>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h3 class="mt-4">Últimas Transações</h3>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Data</th>
+            <th>Descrição</th>
+            <th>Categoria</th>
+            <th>Valor</th>
+            <th>Tipo</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for transacao in transacoes %}
+        <tr>
+            <td>{{ transacao.data.strftime('%d/%m/%Y') }}</td>
+            <td>{{ transacao.descricao }}</td>
+            <td>{{ transacao.categoria_rel.nome }}</td>
+            <td class="{{ 'text-success' if transacao.tipo == 'receita' else 'text-danger' }}">
+                R$ {{ "%.2f"|format(transacao.valor) }}
+            </td>
+            <td>{{ transacao.tipo|capitalize }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
