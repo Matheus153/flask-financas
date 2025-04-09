@@ -11,6 +11,18 @@
 
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="navbar-nav ms-auto">
+            {% if current_user.is_authenticated %}
+            <span class="nav-item nav-link">Olá, {{ current_user.email }}</span>
+            {% if current_user.is_admin %}
+            <a class="nav-link" href="{{ url_for('main.admin_panel') }}">Admin</a>
+            {% endif %}
+            <a class="nav-link" href="{{ url_for('main.logout') }}">Sair</a>
+            {% else %}
+            <a class="nav-link" href="{{ url_for('main.login') }}">Entrar</a>
+            {% endif %}
+        </div>
+
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('main.index') }}">Finanças Pessoais</a>
             <div class="navbar-nav">

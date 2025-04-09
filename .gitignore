@@ -1,3 +1,5 @@
 /instance/financas.db
 /venv
 /app/__pycache__
+/firebase-config.json
+.env

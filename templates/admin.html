@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Painel Admin</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>UID</th>
+            <th>Email</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.uid }}</td>
+            <td>{{ user.email }}</td>
+            <td>
+                <button class="btn btn-sm btn-warning">Editar</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
