@@ -13,6 +13,9 @@
             <th>Valor</th>
             <th>Tipo</th>
             <th>Ações</th>
+            {% if current_user.is_admin %}
+            <th>Usuário</th>
+            {% endif %}
         </tr>
     </thead>
     <tbody>
@@ -31,6 +34,12 @@
                 <a href="{{ url_for('main.excluir_transacao', id=transacao.id) }}" class="btn btn-sm btn-danger"
                     onclick="return confirm('Tem certeza que deseja excluir esta transação?')">Excluir</a>
             </td>
+            {% if current_user.is_admin %}
+            <td>
+                {% set user = firebase_auth.get_user(transacao.user_id) %}
+                {{ user.email }}
+            </td>
+            {% endif %}
         </tr>
         {% endfor %}
     </tbody>

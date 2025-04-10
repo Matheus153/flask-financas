@@ -1,25 +1,47 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>Painel Admin</h2>
-<table class="table">
-    <thead>
-        <tr>
-            <th>UID</th>
-            <th>Email</th>
-            <th>Ações</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for user in users %}
-        <tr>
-            <td>{{ user.uid }}</td>
-            <td>{{ user.email }}</td>
-            <td>
-                <button class="btn btn-sm btn-warning">Editar</button>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="container mt-4">
+    <h2>Gerenciamento de Usuários</h2>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>UID</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.email }}</td>
+                <td class="text-muted small">{{ user.uid }}</td>
+                <td>
+                    {% if user.custom_claims and user.custom_claims.get('admin') %}
+                    <span class="badge bg-success">Admin</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Usuário</span>
+                    {% endif %}
+                </td>
+                <td>
+
+                    {% if user.custom_claims and user.custom_claims.get('admin') %}
+                    <a href="{{ url_for('main.remover_admin', uid=user.uid) }}" class="btn btn-sm btn-danger"
+                        onclick="return confirm('Remover privilégios de admin deste usuário?')">
+                        Remover Admin
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('main.promover_admin', uid=user.uid) }}" class="btn btn-sm btn-warning"
+                        onclick="return confirm('Tornar este usuário administrador?')">
+                        Tornar Admin
+                    </a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endblock %}
