@@ -76,7 +76,9 @@ def login():
             
             if response.status_code == 200:
                 # Verifica o token JWT usando o Admin SDK
-                decoded_token = firebase_auth.verify_id_token(data['idToken'])
+                decoded_token = firebase_auth.verify_id_token(
+                    data['idToken'],
+                    clock_skew_seconds=60)
                 user_id = decoded_token['uid']
                 
                 # Busca informações adicionais do usuário
