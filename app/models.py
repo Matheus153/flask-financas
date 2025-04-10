@@ -20,3 +20,4 @@ class Transacao(db.Model):
     data = db.Column(db.Date, nullable=False)
     tipo = db.Column(db.String(10), nullable=False)
     categoria_id = db.Column(db.Integer, db.ForeignKey('categoria.id'), nullable=False)
+    user_id = db.Column(db.String(128), nullable=False)  # Firebase UID do usuário

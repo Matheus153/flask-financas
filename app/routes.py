@@ -7,6 +7,7 @@ from flask_login import login_user, logout_user, current_user, login_required
 from flask_mail import Message
 from firebase_admin import auth as firebase_auth
 import requests
+import re
 
 
 main_routes = Blueprint('main', __name__)
@@ -30,26 +31,88 @@ def admin_required(func):
 @login_required
 @admin_required
 def admin_panel():
+
     # Exemplo: Listar todos usuários
-    users = firebase_auth.list_users().iterate_all()
-    return render_template('admin.html', users=users)
+    try:
+        # Lista todos os usuários do Firebase
+        users = firebase_auth.list_users().iterate_all()
+        return render_template('admin.html', users=users)
+    except Exception as e:
+        flash(f'Erro ao carregar usuários: {str(e)}', 'danger')
+        return redirect(url_for('main.index'))
+
+
+@main_routes.route('/promover-admin/<uid>')
+@admin_required
+def promover_admin(uid):
+    try:
+        firebase_auth.set_custom_user_claims(uid, {'admin': True})
+        flash('Usuário promovido a admin com sucesso!', 'success')
+    except Exception as e:
+        flash(f'Erro: {str(e)}', 'danger')
+    return redirect(url_for('main.admin_panel'))
+
+@main_routes.route('/remover-admin/<uid>')
+@admin_required
+def remover_admin(uid):
+    try:
+        firebase_auth.set_custom_user_claims(uid, {'admin': None})
+
+        # Atualiza o usuário local (opcional)
+        user = firebase_auth.get_user(uid)
+        
+        flash(f'{user.email} teve os privilégios de admin removidos!', 'success')
+
+        # logging.info(f"ADMIN ACTION: {current_user.email} removeu admin de {user.email}")
+
+    except Exception as e:
+        flash(f'Erro ao remover privilégios: {str(e)}', 'danger')
+
+    return redirect(url_for('main.admin_panel'))
 
 # Rotas
 @main_routes.route('/')
 @login_required
 def index():
-    # Resumo financeiro
-    transacoes = Transacao.query.order_by(Transacao.data.desc()).limit(5).all()
-    # saldo = db.session.query(db.func.sum(Transacao.valor)).scalar() or 0
-    receitas = db.session.query(db.func.sum(Transacao.valor)).filter(Transacao.tipo == 'receita').scalar() or 0
-    despesas = db.session.query(db.func.sum(Transacao.valor)).filter(Transacao.tipo == 'despesa').scalar() or 0
-    saldo = receitas - despesas or 0
+    # Filtra transações de acordo com o tipo de usuário
+    if current_user.is_admin:
+        transacoes_query = Transacao.query
+    else:
+        transacoes_query = Transacao.query.filter_by(user_id=current_user.id)
+
+    ultimas_transacoes = transacoes_query.order_by(Transacao.data.desc()).limit(5).all()
+
+    if current_user.is_admin:
+        # saldo = db.session.query(db.func.sum(Transacao.valor)).scalar() or 0
+        receitas = db.session.query(db.func.sum(Transacao.valor)).filter(Transacao.tipo == 'receita').scalar() or 0
+        despesas = db.session.query(db.func.sum(Transacao.valor)).filter(Transacao.tipo == 'despesa').scalar() or 0
+        saldo = receitas - despesas or 0
+    else:
+        receitas = transacoes_query.filter_by(tipo='receita').with_entities(db.func.sum(Transacao.valor)).scalar() or 0
+        despesas = transacoes_query.filter_by(tipo='despesa').with_entities(db.func.sum(Transacao.valor)).scalar() or 0
+        saldo = receitas - despesas or 0
     
     return render_template('index.html', 
-                         transacoes=transacoes,
+                         transacoes=ultimas_transacoes,
                          saldo=saldo,
                          receitas=receitas,
                          despesas=despesas)
+
+@login_manager.user_loader
+def load_user(user_id):
+    try:
+        user_record = firebase_auth.get_user(user_id)
+         # Verifica custom claims para admin
+        is_admin = user_record.custom_claims.get('admin', False) if user_record.custom_claims else False
+        
+        return User(
+            uid=user_record.uid, 
+            email=user_record.email, 
+            is_admin=is_admin)
+    
+    except Exception as e:
+        print(f"Erro ao carregar usuário: {str(e)}")
+        return None
 
 @main_routes.route('/login', methods=['GET', 'POST'])
 def login():
@@ -79,13 +142,9 @@ def login():
                 decoded_token = firebase_auth.verify_id_token(
                     data['idToken'],
                     clock_skew_seconds=60)
-                user_id = decoded_token['uid']
                 
-                # Busca informações adicionais do usuário
-                user_record = firebase_auth.get_user(user_id)
-                
-                # Cria o objeto User para o Flask-Login
-                user = User(uid=user_id, email=user_record.email, is_admin=False)
+                user = load_user(decoded_token['uid'])
+            
                 login_user(user)
                 
                 flash('Login realizado com sucesso!', 'success')
@@ -118,9 +177,25 @@ def cadastrar():
         email = request.form['email']
         password = request.form['password']
 
+        # Validação da senha
+        errors = []
+        
+        # Mínimo 6 caracteres
         if len(password) < 6:
-            flash('A senha deve ter pelo menos 6 caracteres', 'danger')
-            return redirect(url_for('main.cadastrar'))
+            errors.append("A senha deve ter pelo menos 6 caracteres")
+            
+        # Pelo menos uma letra maiúscula
+        if not re.search(r'[A-Z]', password):
+            errors.append("A senha deve conter pelo menos uma letra maiúscula")
+            
+        # Pelo menos um caractere especial
+        if not re.search(r'[^A-Za-z0-9]', password):
+            errors.append("A senha deve conter pelo menos um caractere especial")
+        
+        if errors:
+            for error in errors:
+                flash(error, 'danger')
+            return render_template('cadastrar.html', email=email)
           
         try:
             # Cria usuário no Firebase
@@ -149,7 +224,6 @@ def recuperar_senha():
             
             # Simulação de envio de email (implemente seu serviço de email aqui)
             # print(f'Link de redefinição: {link}')
-            
             flash('Email de recuperação enviado! Verifique sua caixa postal.', 'success')
 
             msg = Message(
@@ -170,19 +244,14 @@ def recuperar_senha():
     
     return render_template('recuperar_senha.html')
 
-@login_manager.user_loader
-def load_user(user_id):
-    try:
-        user_record = firebase_auth.get_user(user_id)
-        return User(uid=user_record.uid, email=user_record.email)
-    except:
-        return None
-
 @main_routes.route('/transacoes')
 @login_required
 def listar_transacoes():
-    transacoes = Transacao.query.order_by(Transacao.data.desc()).all()
-    return render_template('transacoes.html', transacoes=transacoes)
+    if current_user.is_admin:
+        transacoes = Transacao.query.order_by(Transacao.data.desc()).all()
+    else:
+        transacoes = Transacao.query.filter_by(user_id=current_user.id).order_by(Transacao.data.desc()).all()
+    return render_template('transacoes.html', transacoes=transacoes, firebase_auth=firebase_auth)
 
 @main_routes.route('/adicionar', methods=['GET', 'POST'])
 @login_required
@@ -197,6 +266,7 @@ def adicionar_transacao():
         data = datetime.strptime(request.form['data'], '%Y-%m-%d')
         
         nova_transacao = Transacao(
+            user_id=current_user.id,
             descricao=descricao,
             valor=valor,
             tipo=tipo,
@@ -215,25 +285,42 @@ def adicionar_transacao():
 @main_routes.route('/resumo')
 @login_required
 def resumo():
-    # Agrupar por categoria
+
+    # Filtro baseado no tipo de usuário
+    if current_user.is_admin:
+        transacoes_query = Transacao.query
+    else:
+        transacoes_query = Transacao.query.filter_by(user_id=current_user.id)
+
+    # Resumo por categoria
     resumo_categorias = db.session.query(
         Categoria.nome,
         db.func.sum(Transacao.valor).label('total')
-    ).join(Transacao).group_by(Categoria.nome).all()
+    ).join(Transacao).group_by(Categoria.nome)
     
+    # Aplica filtro de usuário se necessário
+    if not current_user.is_admin:
+        resumo_categorias = resumo_categorias.filter(Transacao.user_id == current_user.id)
+    
+    resumo_categorias = resumo_categorias.all()
+
     # Últimos 30 dias
     trinta_dias_atras = datetime.now() - timedelta(days=30)
-    transacoes_recentes = Transacao.query.filter(Transacao.data >= trinta_dias_atras).all()
-    
-    return render_template('resumo.html', 
+    transacoes_recentes = transacoes_query.filter(Transacao.data >= trinta_dias_atras).all()
+
+    return render_template('resumo.html',
                          resumo_categorias=resumo_categorias,
-                         transacoes_recentes=transacoes_recentes)
+                         transacoes_recentes=transacoes_recentes,
+                         firebase_auth=firebase_auth)
 
 @main_routes.route('/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
 def editar_transacao(id):
     transacao = Transacao.query.get_or_404(id)
     categorias = Categoria.query.all()
+
+    if not (current_user.is_admin or transacao.user_id == current_user.id):
+        abort(403)
     
     if request.method == 'POST':
         transacao.descricao = request.form['descricao']
@@ -254,9 +341,12 @@ def editar_transacao(id):
 @login_required
 def excluir_transacao(id):
     transacao = Transacao.query.get_or_404(id)
+    # Verifica se é dono ou admin
+    if not (current_user.is_admin or transacao.user_id == current_user.id):
+        abort(403)
     db.session.delete(transacao)
     db.session.commit()
-    flash('Transação excluída com sucesso!', 'danger')
+    flash('Transação excluída com sucesso!', 'success')
     return redirect(url_for('main.listar_transacoes'))
 
 # Rota para popular categorias iniciais (executar uma vez)
