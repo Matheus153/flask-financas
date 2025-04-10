@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Login</h2>
+<form method="POST">
+    <div class="mb-3">
+        <label>Email</label>
+        <input type="email" name="email" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label>Senha</label>
+        <input type="password" name="password" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Entrar</button>
+    <div class="mt-3">
+        <a href="{{ url_for('main.cadastrar') }}">Criar nova conta</a> |
+        <a href="{{ url_for('main.recuperar_senha') }}">Esqueci a senha</a>
+    </div>
+</form>
+{% endblock %}

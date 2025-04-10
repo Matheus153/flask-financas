@@ -1,4 +1,11 @@
 from app import db
+from flask_login import UserMixin
+
+class User(UserMixin):
+    def __init__(self, uid, email, is_admin=False):
+        self.id = uid
+        self.email = email
+        self.is_admin = is_admin
 
 class Categoria(db.Model):
     id = db.Column(db.Integer, primary_key=True)
