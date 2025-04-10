@@ -7,6 +7,7 @@ from flask_login import login_user, logout_user, current_user, login_required
 from flask_mail import Message
 from firebase_admin import auth as firebase_auth
 import requests
+import re
 
 
 main_routes = Blueprint('main', __name__)
@@ -118,9 +119,25 @@ def cadastrar():
         email = request.form['email']
         password = request.form['password']
 
+        # Validação da senha
+        errors = []
+        
+        # Mínimo 6 caracteres
         if len(password) < 6:
-            flash('A senha deve ter pelo menos 6 caracteres', 'danger')
-            return redirect(url_for('main.cadastrar'))
+            errors.append("A senha deve ter pelo menos 6 caracteres")
+            
+        # Pelo menos uma letra maiúscula
+        if not re.search(r'[A-Z]', password):
+            errors.append("A senha deve conter pelo menos uma letra maiúscula")
+            
+        # Pelo menos um caractere especial
+        if not re.search(r'[^A-Za-z0-9]', password):
+            errors.append("A senha deve conter pelo menos um caractere especial")
+        
+        if errors:
+            for error in errors:
+                flash(error, 'danger')
+            return render_template('cadastrar.html', email=email)
           
         try:
             # Cria usuário no Firebase
