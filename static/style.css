@@ -1,5 +1,4 @@
 body {
-    padding-top: 20px;
     background-color: #f8f9fa;
 }
 
@@ -18,7 +17,7 @@ body {
 }
 
 .navbar {
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
 .text-success {
@@ -27,4 +26,17 @@ body {
 
 .text-danger {
     font-weight: bold;
+}
+
+/* Filtro */
+.filter-box {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+
+.filter-box select {
+    max-width: 400px;
 }

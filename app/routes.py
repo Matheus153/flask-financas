@@ -1,11 +1,12 @@
 from functools import wraps
-from flask import Blueprint, abort, render_template, request, redirect, url_for, flash
+from flask import Blueprint, current_app, abort, render_template, request, redirect, url_for, flash
 from app import db, login_manager, mail, API_KEY
 from app.models import Transacao, Categoria, User
 from datetime import datetime, timedelta
 from flask_login import login_user, logout_user, current_user, login_required
 from flask_mail import Message
 from firebase_admin import auth as firebase_auth
+from firebase_admin import firestore
 import requests
 import re
 
@@ -74,11 +75,13 @@ def remover_admin(uid):
 @main_routes.route('/')
 @login_required
 def index():
+    user_id_filtro = request.args.get('user_id')
+
     # Filtra transações de acordo com o tipo de usuário
-    if current_user.is_admin:
-        transacoes_query = Transacao.query
+    if current_user.is_admin and user_id_filtro:
+        transacoes_query = Transacao.query.filter_by(user_id=user_id_filtro)
     else:
-        transacoes_query = Transacao.query.filter_by(user_id=current_user.id)
+        transacoes_query = Transacao.query.filter_by(user_id=current_user.id) if not current_user.is_admin else Transacao.query
 
     ultimas_transacoes = transacoes_query.order_by(Transacao.data.desc()).limit(5).all()
 
@@ -91,9 +94,15 @@ def index():
         receitas = transacoes_query.filter_by(tipo='receita').with_entities(db.func.sum(Transacao.valor)).scalar() or 0
         despesas = transacoes_query.filter_by(tipo='despesa').with_entities(db.func.sum(Transacao.valor)).scalar() or 0
         saldo = receitas - despesas or 0
+
+    usuarios = []
+    if current_user.is_admin:
+        usuarios = firebase_auth.list_users().iterate_all()
     
     return render_template('index.html', 
                          transacoes=ultimas_transacoes,
+                         usuarios=usuarios,
+                         user_id_filtro=user_id_filtro,
                          saldo=saldo,
                          receitas=receitas,
                          despesas=despesas)
@@ -102,12 +111,18 @@ def index():
 def load_user(user_id):
     try:
         user_record = firebase_auth.get_user(user_id)
+
          # Verifica custom claims para admin
         is_admin = user_record.custom_claims.get('admin', False) if user_record.custom_claims else False
+
+        # Busca dados no Firestore
+        db_firestore = firestore.client()
+        user_doc = db_firestore.collection('usuarios').document(user_id).get()
         
         return User(
             uid=user_record.uid, 
-            email=user_record.email, 
+            email=user_record.email,
+            name=user_doc.get('full_name') if user_doc.exists else "Usuário", 
             is_admin=is_admin)
     
     except Exception as e:
@@ -158,7 +173,7 @@ def login():
                 elif error_msg == "EMAIL_NOT_FOUND":
                     flash('Email não cadastrado', 'danger')
                 else:
-                    flash(f'Erro ao logar: {error_msg}', 'danger')
+                    flash(f'Erro ao logar: {error_msg}, usuário não cadastrado', 'danger')
         
         except Exception as e:
             flash(f'Erro de conexão: {str(e)}', 'danger')
@@ -174,6 +189,7 @@ def logout():
 @main_routes.route('/cadastrar', methods=['GET', 'POST'])
 def cadastrar():
     if request.method == 'POST':
+        full_name = request.form['fullname']
         email = request.form['email']
         password = request.form['password']
 
@@ -203,12 +219,23 @@ def cadastrar():
                 email=email,
                 password=password
             )
+            # Salva nome no Firestore
+            db_firestore = firestore.client()
+            usuarios_ref = db_firestore.collection('usuarios')
+            usuarios_ref.document(user.uid).set({
+                'full_name': full_name,
+                'email': email,
+                'created_at': firestore.SERVER_TIMESTAMP
+            })
+
             flash('Cadastro realizado com sucesso! Faça login.', 'success')
             return redirect(url_for('main.login'))
         
         except firebase_auth.EmailAlreadyExistsError:
             flash('Este email já está cadastrado.', 'danger')
         except Exception as e:
+            # Rollback em caso de erro
+            firebase_auth.delete_user(user.uid)
             flash('Erro ao cadastrar: ' + str(e), 'danger')
     
     return render_template('cadastrar.html')
@@ -247,11 +274,24 @@ def recuperar_senha():
 @main_routes.route('/transacoes')
 @login_required
 def listar_transacoes():
+    user_id_filtro = request.args.get('user_id')
+
     if current_user.is_admin:
-        transacoes = Transacao.query.order_by(Transacao.data.desc()).all()
+        if user_id_filtro:
+            transacoes = Transacao.query.filter_by(user_id=user_id_filtro).order_by(Transacao.data.desc()).all()
+        else:
+            transacoes = Transacao.query.order_by(Transacao.data.desc()).all()
     else:
         transacoes = Transacao.query.filter_by(user_id=current_user.id).order_by(Transacao.data.desc()).all()
-    return render_template('transacoes.html', transacoes=transacoes, firebase_auth=firebase_auth)
+    
+    usuarios = firebase_auth.list_users().iterate_all() if current_user.is_admin else []
+    
+
+    return render_template('transacoes.html', 
+                           transacoes=transacoes, 
+                           firebase_auth=firebase_auth,
+                           usuarios=usuarios,
+                           user_id_filtro=user_id_filtro)
 
 @main_routes.route('/adicionar', methods=['GET', 'POST'])
 @login_required
@@ -286,32 +326,60 @@ def adicionar_transacao():
 @login_required
 def resumo():
 
-    # Filtro baseado no tipo de usuário
-    if current_user.is_admin:
-        transacoes_query = Transacao.query
-    else:
-        transacoes_query = Transacao.query.filter_by(user_id=current_user.id)
+    user_id_filtro = request.args.get('user_id')
+    usuarios = []
 
-    # Resumo por categoria
-    resumo_categorias = db.session.query(
-        Categoria.nome,
-        db.func.sum(Transacao.valor).label('total')
-    ).join(Transacao).group_by(Categoria.nome)
-    
-    # Aplica filtro de usuário se necessário
-    if not current_user.is_admin:
-        resumo_categorias = resumo_categorias.filter(Transacao.user_id == current_user.id)
-    
-    resumo_categorias = resumo_categorias.all()
+    try:
+        # Verifica se é admin e aplica filtros
+        if current_user.is_admin:
+            usuarios = firebase_auth.list_users().iterate_all()
+            base_query = Transacao.query
+            
+            # Valida o usuário do filtro
+            if user_id_filtro:
+                try:
+                    firebase_auth.get_user(user_id_filtro)
+                    base_query = Transacao.query.filter_by(user_id=user_id_filtro)
+                except firebase_auth.UserNotFoundError:
+                    flash('Usuário não encontrado', 'danger')
+                    return redirect(url_for('main.resumo'))
 
-    # Últimos 30 dias
-    trinta_dias_atras = datetime.now() - timedelta(days=30)
-    transacoes_recentes = transacoes_query.filter(Transacao.data >= trinta_dias_atras).all()
+        else:
+            base_query = Transacao.query.filter_by(user_id=current_user.id)
 
-    return render_template('resumo.html',
-                         resumo_categorias=resumo_categorias,
-                         transacoes_recentes=transacoes_recentes,
-                         firebase_auth=firebase_auth)
+        # Resumo por categoria (usando a base_query)
+        resumo_categorias = (
+            base_query.join(Categoria)
+            .with_entities(
+                Categoria.nome,
+                db.func.sum(Transacao.valor).label('total')
+            )
+            .group_by(Categoria.nome)
+            .all()
+        )
+
+        # Últimos 30 dias
+        trinta_dias_atras = datetime.now() - timedelta(days=30)
+        transacoes_recentes = (
+            base_query
+            .filter(Transacao.data >= trinta_dias_atras)
+            .order_by(Transacao.data.desc())
+            .all()
+        )
+
+        return render_template(
+            'resumo.html',
+            resumo_categorias=resumo_categorias,
+            transacoes_recentes=transacoes_recentes,
+            usuarios=usuarios,
+            user_id_filtro=user_id_filtro,
+            data_atual=datetime.now().strftime('%Y-%m-%d',),
+            firebase_auth=firebase_auth
+        )
+
+    except Exception as e:
+        flash('Ocorreu um erro ao gerar o resumo', 'danger')
+        return redirect(url_for('main.index'))
 
 @main_routes.route('/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -349,28 +417,7 @@ def excluir_transacao(id):
     flash('Transação excluída com sucesso!', 'success')
     return redirect(url_for('main.listar_transacoes'))
 
-# Rota para popular categorias iniciais (executar uma vez)
-@main_routes.route('/populate')
-@login_required
-def populate_categorias():
-    categorias_padrao = [
-        {'nome': 'Salário', 'tipo': 'receita'},
-        {'nome': 'Investimentos', 'tipo': 'receita'},
-        {'nome': 'Alimentação', 'tipo': 'despesa'},
-        {'nome': 'Moradia', 'tipo': 'despesa'},
-        {'nome': 'Transporte', 'tipo': 'despesa'},
-        {'nome': 'Lazer', 'tipo': 'despesa'},
-        {'nome': 'Saúde', 'tipo': 'despesa'},
-        {'nome': 'Educação', 'tipo': 'despesa'},
-    ]
-    
-    for cat in categorias_padrao:
-        if not Categoria.query.filter_by(nome=cat['nome']).first():
-            nova_categoria = Categoria(nome=cat['nome'], tipo=cat['tipo'])
-            db.session.add(nova_categoria)
-    
-    db.session.commit()
-    return 'Categorias padrão adicionadas!'
+
 
 
 
