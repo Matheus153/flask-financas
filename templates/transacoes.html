@@ -3,6 +3,26 @@
 {% block content %}
 <h2>Todas as Transações</h2>
 <a href="{{ url_for('.adicionar_transacao') }}" class="btn btn-primary mb-3">Adicionar Transação</a>
+{% if current_user.is_admin %}
+<div class="mb-4">
+    <form method="get" class="row g-3">
+        <div class="col-md-6">
+            <select name="user_id" class="form-select">
+                <option value="">Todos os usuários</option>
+                {% for usuario in usuarios %}
+                <option value="{{ usuario.uid }}" {% if user_id_filtro==usuario.uid %}selected{% endif %}>
+                    {{ usuario.email }} ({{ usuario.uid[:8] }}...)
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+            <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Limpar</a>
+        </div>
+    </form>
+</div>
+{% endif %}
 
 <table class="table table-striped">
     <thead>

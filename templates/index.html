@@ -3,6 +3,27 @@
 {% block content %}
 <h2>Resumo Financeiro</h2>
 
+{% if current_user.is_admin %}
+<div class="mb-4">
+    <form method="get" class="row g-3">
+        <div class="col-md-6">
+            <select name="user_id" class="form-select">
+                <option value="">Todos os usuários</option>
+                {% for usuario in usuarios %}
+                <option value="{{ usuario.uid }}" {% if user_id_filtro==usuario.uid %}selected{% endif %}>
+                    {{ usuario.email }} ({{ usuario.uid[:8] }}...)
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+            <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Limpar</a>
+        </div>
+    </form>
+</div>
+{% endif %}
+
 <div class="row mt-4">
     <div class="col-md-4">
         <div class="card text-white bg-success mb-3">
