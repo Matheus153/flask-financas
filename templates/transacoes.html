@@ -41,7 +41,7 @@
     <tbody>
         {% for transacao in transacoes %}
         <tr>
-            <td>{{ transacao.data.strftime('%d/%m/%Y') }}</td>
+            <td>{{ transacao.data.strftime('%d/%m/%Y %H:%M') }}</td>
             <td>{{ transacao.descricao }}</td>
             <td>{{ transacao.categoria_rel.nome }}</td>
             <td class="{{ 'text-success' if transacao.tipo == 'receita' else 'text-danger' }}">
