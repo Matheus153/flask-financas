@@ -1,5 +1,5 @@
 from functools import wraps
-from flask import Blueprint, current_app, abort, render_template, request, redirect, url_for, flash
+from flask import Blueprint, abort, render_template, request, redirect, url_for, flash
 from app import db, login_manager, mail, API_KEY
 from app.models import Transacao, Categoria, User
 from datetime import datetime, timedelta
@@ -76,28 +76,45 @@ def remover_admin(uid):
 @login_required
 def index():
     user_id_filtro = request.args.get('user_id')
-
-    # Filtra transações de acordo com o tipo de usuário
-    if current_user.is_admin and user_id_filtro:
-        transacoes_query = Transacao.query.filter_by(user_id=user_id_filtro)
-    else:
-        transacoes_query = Transacao.query.filter_by(user_id=current_user.id) if not current_user.is_admin else Transacao.query
-
-    ultimas_transacoes = transacoes_query.order_by(Transacao.data.desc()).limit(5).all()
-
-    if current_user.is_admin:
-        # saldo = db.session.query(db.func.sum(Transacao.valor)).scalar() or 0
-        receitas = db.session.query(db.func.sum(Transacao.valor)).filter(Transacao.tipo == 'receita').scalar() or 0
-        despesas = db.session.query(db.func.sum(Transacao.valor)).filter(Transacao.tipo == 'despesa').scalar() or 0
-        saldo = receitas - despesas or 0
-    else:
-        receitas = transacoes_query.filter_by(tipo='receita').with_entities(db.func.sum(Transacao.valor)).scalar() or 0
-        despesas = transacoes_query.filter_by(tipo='despesa').with_entities(db.func.sum(Transacao.valor)).scalar() or 0
-        saldo = receitas - despesas or 0
-
-    usuarios = []
+    
+    # Construir query base
     if current_user.is_admin:
         usuarios = firebase_auth.list_users().iterate_all()
+        base_query = Transacao.query
+        
+        if user_id_filtro:
+            try:
+                firebase_auth.get_user(user_id_filtro)
+                base_query = base_query.filter_by(user_id=user_id_filtro)
+            except firebase_auth.UserNotFoundError:
+                flash('Usuário não encontrado', 'danger')
+                return redirect(url_for('main.index'))
+    else:
+        base_query = Transacao.query.filter_by(user_id=current_user.id)
+        usuarios = []
+
+    # Cálculos usando a query base
+    #saldo = se eu quisesse a soma de todos os lançamentos base_query.with_entities(db.func.sum(Transacao.valor)).scalar() or 0
+    
+    receitas = (
+        base_query.filter_by(tipo='receita')
+        .with_entities(db.func.sum(Transacao.valor))
+        .scalar() or 0
+    )
+    despesas = (
+        base_query.filter_by(tipo='despesa')
+        .with_entities(db.func.sum(Transacao.valor))
+        .scalar() or 0
+    )
+
+    saldo =  receitas - despesas or 0
+
+    # Últimas transações
+    ultimas_transacoes = (
+        base_query.order_by(Transacao.data.desc())
+        .limit(8)
+        .all()
+    )
     
     return render_template('index.html', 
                          transacoes=ultimas_transacoes,
