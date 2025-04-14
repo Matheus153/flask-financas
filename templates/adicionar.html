@@ -33,8 +33,8 @@
 
     <div class="mb-3">
         <label for="data" class="form-label">Data</label>
-        <input type="date" class="form-control" id="data" name="data" required
-            value="{{ datetime.now().strftime('%Y-%m-%d') }}">
+        <input type="datetime-local" class="form-control" id="data" name="data" required
+            value="{{ datetime.now().strftime('%Y-%m-%dT%H:%M') }}">
     </div>
 
     <button type="submit" class="btn btn-primary">Salvar</button>

@@ -303,7 +303,8 @@ def adicionar_transacao():
         valor = float(request.form['valor'])
         tipo = request.form['tipo']
         categoria_id = int(request.form['categoria'])
-        data = datetime.strptime(request.form['data'], '%Y-%m-%d')
+        # (antigo formato) data = datetime.strptime(request.form['data'], '%Y-%m-%d')
+        data = datetime.strptime(request.form['data'], '%Y-%m-%dT%H:%M')
         
         nova_transacao = Transacao(
             user_id=current_user.id,

@@ -2,8 +2,9 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_mail import Mail, Message
-import firebase_admin
 from firebase_admin import credentials
+from flask_migrate import Migrate
+import firebase_admin
 import os
 import dotenv
 
@@ -16,6 +17,8 @@ login_manager = LoginManager()
 db = SQLAlchemy()
 
 mail = Mail()
+
+migrate = Migrate()
 
 def create_app():
     app = Flask(__name__, template_folder='../templates', static_folder='../static')
@@ -46,6 +49,8 @@ def create_app():
 
     db.init_app(app)
 
+    migrate.init_app(app, db)
+    
     # Importar rotas após inicializar o app para evitar circular imports
     from app.routes import main_routes
     app.register_blueprint(main_routes)
