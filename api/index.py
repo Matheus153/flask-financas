@@ -29,11 +29,18 @@ def populate_categorias():
     db.session.commit()
     print("✅ Categorias padrão inseridas!")
 
-# Inicializa banco e popula categorias no deploy
-with app.app_context():
-    db.create_all()
-    if not Categoria.query.first():
-        populate_categorias()
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()  # Cria as tabelas se não existirem
+
+        """ if not Categoria.query.first():
+            app.test_client().get('/populate') """
+        
+        # Insere categorias padrão
+        if not Categoria.query.first():  # Só popula se estiver vazio
+            populate_categorias()
+            
+    app.run(debug=True)
 
 # Adaptador WSGI para Vercel
 def handler(environ, start_response):
