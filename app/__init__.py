@@ -6,9 +6,9 @@ from firebase_admin import credentials
 from flask_migrate import Migrate
 import firebase_admin
 import os
-import dotenv
+from dotenv import load_dotenv
 
-dotenv.load_dotenv()
+load_dotenv()
 
 API_KEY = os.getenv('API_KEY')
 
@@ -36,12 +36,27 @@ def create_app():
     mail.init_app(app)
 
 
-    # Configuracoes do Firebase
-    firebase_config_path = os.path.join(
+    # Configuracoes do Firebase # substituído por firebase_config
+    """ firebase_config_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),  # Sobe 2 níveis (de app/ para a raiz)
        'firebase-config.json'
-    )
-    cred = credentials.Certificate(str(firebase_config_path))
+    ) """
+
+    firebase_config = {
+        "type": os.getenv('TYPE'),
+        "project_id": os.getenv('PROJECT_ID'),
+        "private_key_id": os.getenv('PRIVATE_KEY_ID'),
+        "private_key": os.getenv('PRIVATE_KEY'),
+        "client_email": os.getenv('CLIENT_EMAIL'),
+        "client_id": os.getenv('CLIENT_ID'),
+        "auth_uri": os.getenv('AUTH_URI'),
+        "token_uri": os.getenv('TOKEN_URI'),
+        "auth_provider_x509_cert_url": os.getenv('AUTH_PROVIDER_X509_CERT_URL'),
+        "client_x509_cert_url": os.getenv('CLIENT_X509_CERT_URL'),
+        "universe_domain": os.getenv('UNIVERSE_DOMAIN')
+    }
+
+    cred = credentials.Certificate(firebase_config)
     firebase_admin.initialize_app(cred)
 
     # Inicializar Flask-Login
