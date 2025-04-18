@@ -28,6 +28,23 @@ def admin_required(func):
         return func(*args, **kwargs)
     return decorated_view
 
+def configurar_primeiro_admin(uid):
+    db_firestore = firestore.client()
+    config_ref = db_firestore.collection('config').document('admin')
+    
+    # Transação atômica para evitar race conditions
+    @firestore.transactional
+    def atualizar_config(transaction):
+        snapshot = config_ref.get(transaction=transaction)
+        
+        if not snapshot.exists:
+            transaction.set(config_ref, {'primeiro_admin': uid})
+            return True
+        return False
+
+    transaction = db_firestore.transaction()
+    return atualizar_config(transaction)
+
 @main_routes.route('/admin')
 @login_required
 @admin_required
@@ -176,8 +193,13 @@ def login():
                     clock_skew_seconds=60)
                 
                 user = load_user(decoded_token['uid'])
+                
+                user_id = decoded_token['uid']
             
                 login_user(user)
+
+                if configurar_primeiro_admin(user_id):
+                    firebase_auth.set_custom_user_claims(user_id, {'admin': True})
                 
                 flash('Login realizado com sucesso!', 'success')
                 return redirect(url_for('main.index'))
