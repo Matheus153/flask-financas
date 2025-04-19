@@ -4,3 +4,4 @@
 /firebase-config.json
 /migrations
 .env
+migrate_sqlite_to_postgres.py
