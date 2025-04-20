@@ -7,6 +7,8 @@ from flask_login import login_user, logout_user, current_user, login_required
 from flask_mail import Message
 from firebase_admin import auth as firebase_auth
 from firebase_admin import firestore
+import plotly.express as px
+import pandas as pd
 import requests
 import re
 
@@ -407,6 +409,44 @@ def resumo():
             .all()
         )
 
+         # Criar DataFrame para análise
+        df = pd.DataFrame([{
+            'Categoria': t.categoria_rel.nome,
+            'Valor': t.valor,
+            'Tipo': t.tipo,
+            'Data': t.data
+        } for t in transacoes_recentes])
+        
+        # Gráfico 1: Distribuição de Despesas por Categoria (Pizza)
+        fig_despesas = px.pie(
+            df[df['Tipo'] == 'despesa'],
+            names='Categoria',
+            values='Valor',
+            title='Distribuição de Despesas por Categoria',
+            hole=0.4,
+            color_discrete_sequence=px.colors.qualitative.Set3
+        )
+        
+        # Gráfico 2: Comparativo Receitas vs Despesas (Barras)
+        df_agg = df.groupby('Tipo', as_index=False).agg({'Valor': 'sum'})
+        fig_comparativo = px.bar(
+            df_agg,
+            x='Tipo',
+            y='Valor',
+            title='Receitas vs Despesas',
+            color='Tipo',
+            color_discrete_map={
+                'receita': '#2ecc71',
+                'despesa': '#e74c3c'
+            }
+        )
+        
+        # Converter gráficos para HTML
+        graficos = {
+            'despesas': fig_despesas.to_html(full_html=False),
+            'comparativo': fig_comparativo.to_html(full_html=False)
+        }
+
         return render_template(
             'resumo.html',
             resumo_categorias=resumo_categorias,
@@ -414,7 +454,8 @@ def resumo():
             usuarios=usuarios,
             user_id_filtro=user_id_filtro,
             data_atual=datetime.now().strftime('%Y-%m-%d',),
-            firebase_auth=firebase_auth
+            firebase_auth=firebase_auth,
+            graficos=graficos
         )
 
     except Exception as e:
