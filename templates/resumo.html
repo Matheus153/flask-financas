@@ -36,6 +36,25 @@
     </div>
     {% endif %}
 
+    <!-- Seção de Gráficos -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    {{ graficos.despesas|safe }}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    {{ graficos.comparativo|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <!-- Seção de Resumo por Categoria -->
         <div class="col-md-6 mb-4">
@@ -123,5 +142,7 @@
             </div>
         </div>
     </div>
+    <!-- Scripts do Plotly -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </div>
 {% endblock %}
