@@ -18,7 +18,7 @@
         </div>
         <div class="col-md-2">
             <button type="submit" class="btn btn-primary">Filtrar</button>
-            <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Limpar</a>
+            <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary">Limpar</a>
         </div>
     </form>
 </div>
@@ -50,9 +50,11 @@
             <td>{{ transacao.tipo|capitalize }}</td>
             <td>
                 <a href="{{ url_for('main.editar_transacao', id=transacao.id) }}"
-                    class="btn btn-sm btn-warning">Editar</a>
+                    class="btn btn-sm btn-outline-secondary text mb-0"
+                    style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: 1rem; --bs-btn-font-size: .75rem;">Alterar</a>
                 <a href="{{ url_for('main.excluir_transacao', id=transacao.id) }}" class="btn btn-sm btn-danger"
-                    onclick="return confirm('Tem certeza que deseja excluir esta transação?')">Excluir</a>
+                    onclick="return confirm('Tem certeza que deseja excluir esta transação?')"
+                    style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: 1rem; --bs-btn-font-size: .75rem;">Excluir</a>
             </td>
             {% if current_user.is_admin %}
             <td>

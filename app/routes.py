@@ -426,19 +426,57 @@ def resumo():
             hole=0.4,
             color_discrete_sequence=px.colors.qualitative.Set3
         )
+
+        fig_despesas.update_layout(
+            font=dict(
+                family="Poppins, sans-serif"
+            )
+        )
+
         
         # Gráfico 2: Comparativo Receitas vs Despesas (Barras)
         df_agg = df.groupby('Tipo', as_index=False).agg({'Valor': 'sum'})
+        df_agg = df_agg.sort_values(by='Valor', ascending=False)
+        # Criar coluna com valores formatados no padrão BR (ex: 1.200)
+        df_agg['Valor_formatado'] = df_agg['Valor'].apply(
+            lambda x: f"{x:,.0f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        )
+
         fig_comparativo = px.bar(
             df_agg,
             x='Tipo',
             y='Valor',
             title='Receitas vs Despesas',
             color='Tipo',
+            text='Valor_formatado',
             color_discrete_map={
-                'receita': '#2ecc71',
-                'despesa': '#e74c3c'
+                'receita': '#57C7A2',
+                'despesa': '#F06960'
             }
+        )
+
+        # Update layout to remove background
+        fig_comparativo.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)',  # Set plot background to transparent
+            paper_bgcolor='rgba(0,0,0,0)',  # Set paper background to transparent
+            yaxis_title='Valor em (R$)',
+            font=dict(
+                family="Poppins, sans-serif"
+            )
+        )
+
+        fig_comparativo.update_traces(textposition='outside')
+
+        # Substituir os valores do eixo y por strings formatadas ao estilo brasileiro
+        ticks = df_agg['Valor'].max()
+        tick_vals = list(range(0, int(ticks) + 1, int(ticks / 5)))  # 5 ticks
+        tick_text = [f"{v:,.0f}".replace(",", "X").replace(".", ",").replace("X", ".") for v in tick_vals]
+
+        fig_comparativo.update_yaxes(
+            tickformat=',.0f',
+            tickvals=tick_vals,
+            ticktext=tick_text,             # Sem casas decimais, com separador de milhar
+            separatethousands=True
         )
         
         # Converter gráficos para HTML
@@ -476,7 +514,7 @@ def editar_transacao(id):
         transacao.valor = float(request.form['valor'])
         transacao.tipo = request.form['tipo']
         transacao.categoria_id = int(request.form['categoria'])
-        transacao.data = datetime.strptime(request.form['data'], '%Y-%m-%d')
+        transacao.data = datetime.strptime(request.form['data'], '%Y-%m-%dT%H:%M')
         
         db.session.commit()
         flash('Transação atualizada com sucesso!', 'success')

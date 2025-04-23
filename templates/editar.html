@@ -37,8 +37,8 @@
 
     <div class="mb-3">
         <label for="data" class="form-label">Data</label>
-        <input type="date" class="form-control" id="data" name="data" value="{{ transacao.data.strftime('%Y-%m-%d') }}"
-            required>
+        <input type="datetime-local" class="form-control" id="data" name="data"
+            value="{{ transacao.data.strftime('%Y-%m-%dT%H:%M') }}" required>
     </div>
 
     <button type="submit" class="btn btn-primary">Atualizar</button>
