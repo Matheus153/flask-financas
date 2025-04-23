@@ -18,7 +18,7 @@
         </div>
         <div class="col-md-2">
             <button type="submit" class="btn btn-primary">Filtrar</button>
-            <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Limpar</a>
+            <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary">Limpar</a>
         </div>
     </form>
 </div>
@@ -26,17 +26,17 @@
 
 <div class="row mt-4">
     <div class="col-md-4">
-        <div class="card text-white bg-success mb-3">
+        <div class="card text-white bg-primary mb-3">
             <div class="card-header">Saldo Total</div>
-            <div class="card-body">
+            <div class="card-body-home">
                 <h5 class="card-title">R$ {{ "%.2f"|format(saldo) }}</h5>
             </div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card text-white bg-info mb-3">
+        <div class="card text-white bg-success mb-3">
             <div class="card-header">Receitas</div>
-            <div class="card-body">
+            <div class="card-body-home">
                 <h5 class="card-title">R$ {{ "%.2f"|format(receitas) }}</h5>
             </div>
         </div>
@@ -44,7 +44,7 @@
     <div class="col-md-4">
         <div class="card text-white bg-danger mb-3">
             <div class="card-header">Despesas</div>
-            <div class="card-body">
+            <div class="card-body-home">
                 <h5 class="card-title">R$ {{ "%.2f"|format(despesas) }}</h5>
             </div>
         </div>

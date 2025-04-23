@@ -36,7 +36,6 @@ def create_app():
 
     mail.init_app(app)
 
-
     # Configuracoes do Firebase # substituído por firebase_config
     """ firebase_config_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),  # Sobe 2 níveis (de app/ para a raiz)
@@ -59,6 +58,16 @@ def create_app():
 
     cred = credentials.Certificate(firebase_config)
     firebase_admin.initialize_app(cred)
+
+    # Desativar cache durante o desenvolvimento
+    if app.config['DEBUG']:
+        app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+        @app.after_request
+        def add_header(response):
+            response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '-1'
+            return response
 
     # Inicializar Flask-Login
     login_manager.init_app(app) 

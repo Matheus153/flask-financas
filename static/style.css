@@ -1,5 +1,7 @@
+
 body {
     background-color: #f8f9fa;
+    font-family: Poppins, sans-serif;
 }
 
 .card {
@@ -8,7 +10,19 @@ body {
 }
 
 .card-header {
-    font-weight: bold;
+    font-weight: 500;
+}
+
+.card-body-home {
+    height: 10vh;
+    display: flex;
+    margin: 0 0 10px 20px;
+    align-items: end;
+}
+
+.navbar-brand {
+    margin: 0 2.5rem 0 2.5rem;
+    justify-content: start;
 }
 
 .table {
@@ -18,14 +32,15 @@ body {
 
 .navbar {
     margin-bottom: 20px;
+    height: 12vh;
 }
 
 .text-success {
-    font-weight: bold;
+    font-weight: 500;
 }
 
 .text-danger {
-    font-weight: bold;
+    font-weight: 500;
 }
 
 /* Filtro */
