@@ -23,7 +23,7 @@ migrate = Migrate()
 def create_app():
     app = Flask(__name__, template_folder='../templates', static_folder='../static')
     # app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(app.instance_path, "financas.db")}'
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DB_URI')
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.secret_key = os.getenv('SECRET_KEY')
 
@@ -46,7 +46,7 @@ def create_app():
         "type": os.getenv('TYPE'),
         "project_id": os.getenv('PROJECT_ID'),
         "private_key_id": os.getenv('PRIVATE_KEY_ID'),
-        "private_key": os.getenv('PRIVATE_KEY'),
+        "private_key": os.getenv('PRIVATE_KEY').replace('\\n', '\n'),
         "client_email": os.getenv('CLIENT_EMAIL'),
         "client_id": os.getenv('CLIENT_ID'),
         "auth_uri": os.getenv('AUTH_URI'),
