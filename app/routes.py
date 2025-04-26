@@ -465,7 +465,10 @@ def resumo():
             )
         )
 
-        fig_comparativo.update_traces(textposition='outside')
+        fig_comparativo.update_traces(
+            textposition='outside',
+            textfont_size=10
+        )
 
         # Substituir os valores do eixo y por strings formatadas ao estilo brasileiro
         ticks = df_agg['Valor'].max()
