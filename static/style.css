@@ -1,3 +1,5 @@
+/* Ícones do Bootstrap Icons */
+@import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css");
 
 body {
     background-color: #f8f9fa;
@@ -20,19 +22,55 @@ body {
     align-items: end;
 }
 
+.navbar {
+    margin-bottom: 20px;
+    height: 12vh;
+    padding: 0.5rem 1rem;
+}
+
+/* Dropdown alinhado à direita */
+.dropdown-menu-end {
+    right: 0;
+    left: auto;
+}
+
+/* Ajuste do espaçamento dos itens */
+.navbar-nav .nav-item {
+    margin-left: 1rem;
+}
+
+/* Link ativo */
+.nav-link.active {
+    font-weight: 500;
+    position: relative;
+}
+
+.nav-link.active::after {
+    content: "";
+    position: absolute;
+    bottom: -8px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: grey;
+}
+
 .navbar-brand {
     margin: 0 2.5rem 0 2.5rem;
     justify-content: start;
 }
 
+.nav-link {
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+    transform: translateY(-2px);
+}
+
 .table {
     margin-top: 20px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.navbar {
-    margin-bottom: 20px;
-    height: 12vh;
 }
 
 .text-success {
@@ -68,4 +106,101 @@ body {
 
 .shadow {
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* Dispositivos pequenos (telefones, 576px e abaixo) */
+@media (max-width: 576px) {
+    .navbar-brand {
+        font-size: 1rem;
+    }
+    
+    .grafico-responsive {
+        height: 300px;
+        overflow-x: auto;
+    }
+    
+    .table-responsive-md {
+        font-size: 0.8rem;
+    }
+    
+    .card-title {
+        font-size: 1.2rem;
+    }
+}
+
+/* Dispositivos médios (tablets, 768px e abaixo) */
+@media (max-width: 768px) {
+    .dropdown-menu {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .navbar-nav .nav-item {
+        margin-left: 0;
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* Menu Mobile */
+@media (max-width: 991px) {
+    .navbar-collapse {
+        position: fixed;
+        top: 56px; /* Altura da navbar */
+        width: 20rem;
+        border-radius: 6px;
+        left: 6px;
+        right: 0;
+        background: rgba(21, 24, 29, 0.9);
+        padding: 1rem;
+        max-height: calc(100vh - 56px);
+        overflow-y: auto;
+        z-index: 1000;
+        display: none; /* Escondido por padrão */
+        transition: all 0.3s ease-in-out;
+        transform: translateY(-20px);
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    .navbar-collapse.show {
+        display: block;
+        transform: translateY(0);
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .nav-item {
+        margin: 0.5rem 0;
+    }
+
+    .dropdown-menu {
+        background: rgba(230, 234, 240, 0.82);
+        border: none;
+    }
+
+    /* Overlay escuro */
+    .mobile-overlay {
+        position: fixed;
+        top: 100px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 999;
+        display: none;
+    }
+}
+
+/* Ajustes gerais de responsividade */
+.container {
+    padding-top: 40px; /* Compensa navbar fixa */
+}
+
+.table-responsive-md {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.grafico-responsive {
+    min-width: 300px; /* Largura mínima para gráficos */
 }
