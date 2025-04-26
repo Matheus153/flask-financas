@@ -24,46 +24,49 @@
 </div>
 {% endif %}
 
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Data</th>
-            <th>Descrição</th>
-            <th>Categoria</th>
-            <th>Valor</th>
-            <th>Tipo</th>
-            <th>Ações</th>
-            {% if current_user.is_admin %}
-            <th>Usuário</th>
-            {% endif %}
-        </tr>
-    </thead>
-    <tbody>
-        {% for transacao in transacoes %}
-        <tr>
-            <td>{{ transacao.data.strftime('%d/%m/%Y %H:%M') }}</td>
-            <td>{{ transacao.descricao }}</td>
-            <td>{{ transacao.categoria_rel.nome }}</td>
-            <td class="{{ 'text-success' if transacao.tipo == 'receita' else 'text-danger' }}">
-                R$ {{ "%.2f"|format(transacao.valor) }}
-            </td>
-            <td>{{ transacao.tipo|capitalize }}</td>
-            <td>
-                <a href="{{ url_for('main.editar_transacao', id=transacao.id) }}"
-                    class="btn btn-sm btn-outline-secondary text mb-0"
-                    style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: 1rem; --bs-btn-font-size: .75rem;">Alterar</a>
-                <a href="{{ url_for('main.excluir_transacao', id=transacao.id) }}" class="btn btn-sm btn-danger"
-                    onclick="return confirm('Tem certeza que deseja excluir esta transação?')"
-                    style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: 1rem; --bs-btn-font-size: .75rem;">Excluir</a>
-            </td>
-            {% if current_user.is_admin %}
-            <td>
-                {% set user = firebase_auth.get_user(transacao.user_id) %}
-                {{ user.email }}
-            </td>
-            {% endif %}
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="table-responsive-md">
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Descrição</th>
+                <th>Categoria</th>
+                <th>Valor</th>
+                <th>Tipo</th>
+                <th>Ações</th>
+                {% if current_user.is_admin %}
+                <th>Usuário</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for transacao in transacoes %}
+            <tr>
+                <td>{{ transacao.data.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ transacao.descricao }}</td>
+                <td>{{ transacao.categoria_rel.nome }}</td>
+                <td class="{{ 'text-success' if transacao.tipo == 'receita' else 'text-danger' }}">
+                    R$ {{ "%.2f"|format(transacao.valor) }}
+                </td>
+                <td>{{ transacao.tipo|capitalize }}</td>
+                <td>
+                    <a href="{{ url_for('main.editar_transacao', id=transacao.id) }}"
+                        class="btn btn-sm btn-outline-secondary text mb-0"
+                        style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: 1rem; --bs-btn-font-size: .75rem;">Alterar</a>
+                    <a href="{{ url_for('main.excluir_transacao', id=transacao.id) }}" class="btn btn-sm btn-danger"
+                        onclick="return confirm('Tem certeza que deseja excluir esta transação?')"
+                        style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: 1rem; --bs-btn-font-size: .75rem;">Excluir</a>
+                </td>
+                {% if current_user.is_admin %}
+                <td>
+                    {% set user = firebase_auth.get_user(transacao.user_id) %}
+                    {{ user.email }}
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
 {% endblock %}
