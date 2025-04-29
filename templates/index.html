@@ -52,30 +52,33 @@
 </div>
 
 <h3 class="mt-4">Últimas Transações</h3>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Data</th>
-            <th>Descrição</th>
-            <th>Categoria</th>
-            <th>Valor</th>
-            <th>Tipo</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for transacao in transacoes %}
-        <tr>
-            <td>{{ transacao.data.strftime('%d/%m/%Y %H:%M') }}</td>
-            <td>{{ transacao.descricao }}</td>
-            <td>{{ transacao.categoria_rel.nome }}</td>
-            <td class="{{ 'text-success' if transacao.tipo == 'receita' else 'text-danger' }}">
-                R$ {{ "%.2f"|format(transacao.valor) }}
-            </td>
-            <td>{{ transacao.tipo|capitalize }}</td>
-        </tr>
-        {% endfor %}
+<div class="table-responsive-md">
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Descrição</th>
+                <th>Categoria</th>
+                <th>Valor</th>
+                <th>Tipo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for transacao in transacoes %}
+            <tr>
+                <td>{{ transacao.data.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ transacao.descricao }}</td>
+                <td>{{ transacao.categoria_rel.nome }}</td>
+                <td class="{{ 'text-success' if transacao.tipo == 'receita' else 'text-danger' }}">
+                    R$ {{ "%.2f"|format(transacao.valor) }}
+                </td>
+                <td>{{ transacao.tipo|capitalize }}</td>
+            </tr>
+            {% endfor %}
 
 
-    </tbody>
-</table>
+        </tbody>
+    </table>
+</div>
+
 {% endblock %}
