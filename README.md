@@ -136,6 +136,9 @@ Você pode preenche-las com o seguinte padrão:
   - **tipo** (tipo: text)
   - **user_id** (tipo: text)
   - **categoria_id** (tipo: int8, foreign-key: categoria.id)
+  - **recorrente** (tipo: bool)
+  - **meses_repeticao** (tipo: int8)
+  - **data_original** (tipo: timestamp)
 
 - Clique em "Connect" e copie o link da url "transaction pooler" e cole na variável de ambiente (SQLALCHEMY_DATABASE_URI)
 
@@ -188,6 +191,7 @@ flask-financas/
 │   ├── editar.html
 │   ├── index.html
 │   ├── login.html
+│   ├── recorrentes.html
 │   ├── recuperar_senha.html
 │   ├── resumo.html
 │   └── transacoes.html
