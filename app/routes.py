@@ -1,6 +1,7 @@
 from functools import wraps
+
 from flask import Blueprint, abort, render_template, request, redirect, url_for, flash
-from app import db, login_manager, mail, API_KEY
+from app import db, login_manager, mail, API_KEY, create_app, cred
 from app.models import Transacao, Categoria, User
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
@@ -9,6 +10,7 @@ from flask_login import login_user, logout_user, current_user, login_required
 from flask_mail import Message
 from firebase_admin import auth as firebase_auth
 from firebase_admin import firestore
+import firebase_admin
 import plotly.express as px
 import pandas as pd
 import requests
@@ -21,8 +23,18 @@ main_routes = Blueprint('main', __name__)
 login_manager.login_view = 'main.login'
 
 def criar_transacao_recorrente():
-    with main_routes.app_context():
-        hoje = datetime.now()
+    app = create_app()
+
+    # Verifica se o Firebase já foi inicializado
+    try:
+        firebase_admin.get_app()
+    except ValueError:
+        firebase_admin.initialize_app(cred)
+
+    with app.app_context():
+        agora = datetime.now()
+        
+        # Busca transações recorrentes que ainda não completaram 12 meses
         transacoes = Transacao.query.filter(
             Transacao.recorrente == True,
             Transacao.meses_repeticao < 12
@@ -30,28 +42,31 @@ def criar_transacao_recorrente():
 
         for transacao in transacoes:
             # Calcula a próxima data (mesmo dia, mês seguinte)
-            nova_data = transacao.data_original + relativedelta(months=+transacao.meses_repeticao+1)
+            meses_a_adicionar = transacao.meses_repeticao + 1
+            nova_data = transacao.data_original + relativedelta(months=meses_a_adicionar)
+
+            # Verifica se já passou da data prevista
+            if nova_data <= agora:
+                nova_transacao = Transacao(
+                    descricao=transacao.descricao,
+                    valor=transacao.valor,
+                    tipo=transacao.tipo,
+                    categoria_id=transacao.categoria_id,
+                    user_id=transacao.user_id,
+                    data=nova_data,
+                    recorrente=False, # Não permite recorrência em cascata
+                    meses_repeticao=transacao.meses_repeticao + 1,
+                    data_original=transacao.data_original
+                )
             
-            nova_transacao = Transacao(
-                descricao=transacao.descricao,
-                valor=transacao.valor,
-                tipo=transacao.tipo,
-                categoria_id=transacao.categoria_id,
-                user_id=transacao.user_id,
-                data=nova_data,
-                recorrente=True,
-                meses_repeticao=transacao.meses_repeticao + 1,
-                data_original=transacao.data_original
-            )
-            
-            db.session.add(nova_transacao)
-            transacao.meses_repeticao += 1
+                db.session.add(nova_transacao)
+                transacao.meses_repeticao += 1
         
         db.session.commit()
 
 # Agendador que roda diariamente às 00:01
 scheduler = BackgroundScheduler()
-scheduler.add_job(func=criar_transacao_recorrente, trigger='cron', hour=0, minute=1)
+scheduler.add_job(func=criar_transacao_recorrente, trigger='cron', hour=0, minute=5)
 scheduler.start()
 
 # Função para promover usuário a admin
@@ -441,6 +456,64 @@ def adicionar_transacao():
     
     return render_template('adicionar.html', categorias=categorias, datetime=datetime)
 
+
+
+@main_routes.route('/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_transacao(id):
+    transacao = Transacao.query.get_or_404(id)
+    categorias = Categoria.query.all()
+
+    if not (current_user.is_admin or transacao.user_id == current_user.id):
+        abort(403)
+    
+    if request.method == 'POST':
+        transacao.descricao = request.form['descricao']
+        transacao.valor = float(request.form['valor'])
+        transacao.tipo = request.form['tipo']
+        transacao.categoria_id = int(request.form['categoria'])
+        transacao.data = datetime.strptime(request.form['data'], '%Y-%m-%dT%H:%M')
+
+        # Segurança para não permitir alterações em transações recorrentes
+        if transacao.meses_repeticao > 0 and transacao.data_original != transacao.data:
+            flash('Não é possível alterar a data de transações recorrentes já geradas', 'warning')
+            return redirect(url_for('main.editar_transacao', id=id))
+        
+         # Atualiza recorrência
+        novo_recorrente = 'recorrente' in request.form
+        
+        if transacao.recorrente and not novo_recorrente:
+            # Se estava ativo e foi desativado
+            transacao.recorrente = False
+            transacao.meses_repeticao = 0
+            transacao.data_original = None
+        elif not transacao.recorrente and novo_recorrente:
+            # Se estava inativo e foi ativado
+            transacao.recorrente = True
+            transacao.data_original = transacao.data
+            transacao.meses_repeticao = 0
+        
+        db.session.commit()
+        flash('Transação atualizada com sucesso!', 'success')
+        return redirect(url_for('main.listar_transacoes'))
+    
+    return render_template('editar.html', 
+                         transacao=transacao, 
+                         categorias=categorias)
+
+@main_routes.route('/excluir/<int:id>')
+@login_required
+def excluir_transacao(id):
+    transacao = Transacao.query.get_or_404(id)
+    # Verifica se é dono ou admin
+    if not (current_user.is_admin or transacao.user_id == current_user.id):
+        abort(403)
+    db.session.delete(transacao)
+    db.session.commit()
+    flash('Transação excluída com sucesso!', 'success')
+    return redirect(url_for('main.listar_transacoes'))
+
+
 @main_routes.route('/resumo')
 @login_required
 def resumo():
@@ -579,63 +652,3 @@ def resumo():
     except Exception as e:
         flash('Ocorreu um erro ao gerar o resumo', 'danger')
         return redirect(url_for('main.index'))
-
-@main_routes.route('/editar/<int:id>', methods=['GET', 'POST'])
-@login_required
-def editar_transacao(id):
-    transacao = Transacao.query.get_or_404(id)
-    categorias = Categoria.query.all()
-
-    if not (current_user.is_admin or transacao.user_id == current_user.id):
-        abort(403)
-    
-    if request.method == 'POST':
-        transacao.descricao = request.form['descricao']
-        transacao.valor = float(request.form['valor'])
-        transacao.tipo = request.form['tipo']
-        transacao.categoria_id = int(request.form['categoria'])
-        transacao.data = datetime.strptime(request.form['data'], '%Y-%m-%dT%H:%M')
-
-        # Segurança para não permitir alterações em transações recorrentes
-        if transacao.meses_repeticao > 0 and transacao.data_original != transacao.data:
-            flash('Não é possível alterar a data de transações recorrentes já geradas', 'warning')
-            return redirect(url_for('main.editar_transacao', id=id))
-        
-         # Atualiza recorrência
-        novo_recorrente = 'recorrente' in request.form
-        
-        if transacao.recorrente and not novo_recorrente:
-            # Se estava ativo e foi desativado
-            transacao.recorrente = False
-            transacao.meses_repeticao = 0
-            transacao.data_original = None
-        elif not transacao.recorrente and novo_recorrente:
-            # Se estava inativo e foi ativado
-            transacao.recorrente = True
-            transacao.data_original = transacao.data
-            transacao.meses_repeticao = 0
-        
-        db.session.commit()
-        flash('Transação atualizada com sucesso!', 'success')
-        return redirect(url_for('main.listar_transacoes'))
-    
-    return render_template('editar.html', 
-                         transacao=transacao, 
-                         categorias=categorias)
-
-@main_routes.route('/excluir/<int:id>')
-@login_required
-def excluir_transacao(id):
-    transacao = Transacao.query.get_or_404(id)
-    # Verifica se é dono ou admin
-    if not (current_user.is_admin or transacao.user_id == current_user.id):
-        abort(403)
-    db.session.delete(transacao)
-    db.session.commit()
-    flash('Transação excluída com sucesso!', 'success')
-    return redirect(url_for('main.listar_transacoes'))
-
-
-
-
-

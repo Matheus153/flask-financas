@@ -1,5 +1,3 @@
-import atexit
-from sched import scheduler
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -22,7 +20,22 @@ mail = Mail()
 
 migrate = Migrate()
 
-atexit.register(lambda: scheduler.shutdown())  # Desliga o agendador corretamente
+firebase_config = {
+        "type": os.getenv('TYPE'),
+        "project_id": os.getenv('PROJECT_ID'),
+        "private_key_id": os.getenv('PRIVATE_KEY_ID'),
+        "private_key": os.getenv('PRIVATE_KEY').replace('\\n', '\n'),
+        "client_email": os.getenv('CLIENT_EMAIL'),
+        "client_id": os.getenv('CLIENT_ID'),
+        "auth_uri": os.getenv('AUTH_URI'),
+        "token_uri": os.getenv('TOKEN_URI'),
+        "auth_provider_x509_cert_url": os.getenv('AUTH_PROVIDER_X509_CERT_URL'),
+        "client_x509_cert_url": os.getenv('CLIENT_X509_CERT_URL'),
+        "universe_domain": os.getenv('UNIVERSE_DOMAIN')
+    }
+
+cred = credentials.Certificate(firebase_config)
+firebase_admin.initialize_app(cred)
 
 def create_app():
     app = Flask(__name__, template_folder='../templates', static_folder='../static')
@@ -46,23 +59,6 @@ def create_app():
        'firebase-config.json'
     ) """
 
-    firebase_config = {
-        "type": os.getenv('TYPE'),
-        "project_id": os.getenv('PROJECT_ID'),
-        "private_key_id": os.getenv('PRIVATE_KEY_ID'),
-        "private_key": os.getenv('PRIVATE_KEY').replace('\\n', '\n'),
-        "client_email": os.getenv('CLIENT_EMAIL'),
-        "client_id": os.getenv('CLIENT_ID'),
-        "auth_uri": os.getenv('AUTH_URI'),
-        "token_uri": os.getenv('TOKEN_URI'),
-        "auth_provider_x509_cert_url": os.getenv('AUTH_PROVIDER_X509_CERT_URL'),
-        "client_x509_cert_url": os.getenv('CLIENT_X509_CERT_URL'),
-        "universe_domain": os.getenv('UNIVERSE_DOMAIN')
-    }
-
-    cred = credentials.Certificate(firebase_config)
-    firebase_admin.initialize_app(cred)
-
     # Desativar cache durante o desenvolvimento
     if app.config['DEBUG']:
         app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -81,7 +77,8 @@ def create_app():
     migrate.init_app(app, db)
     
     # Importar rotas após inicializar o app para evitar circular imports
-    from app.routes import main_routes
-    app.register_blueprint(main_routes)
+    with app.app_context():
+        from app.routes import main_routes
+        app.register_blueprint(main_routes)
 
     return app

@@ -33,6 +33,9 @@
             <th>Próxima Ocorrência</th>
             <th>Repetições Restantes</th>
             <th>Ações</th>
+            {% if current_user.is_admin %}
+            <th>Usuário</th>
+            {% endif %}
         </tr>
     </thead>
     <tbody>
@@ -55,6 +58,12 @@
                     onclick="return confirm('Tem certeza que deseja excluir esta transação?')"
                     style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: 1rem; --bs-btn-font-size: .75rem;">Excluir</a>
             </td>
+            {% if current_user.is_admin %}
+            <td>
+                {% set user = firebase_auth.get_user(transacao.user_id) %}
+                {{ user.email }}
+            </td>
+            {% endif %}
         </tr>
         {% endfor %}
     </tbody>
