@@ -41,7 +41,18 @@
             value="{{ transacao.data.strftime('%Y-%m-%dT%H:%M') }}" required>
     </div>
 
-    <button type="submit" class="btn btn-primary">Atualizar</button>
-    <a href="{{ url_for('main.listar_transacoes') }}" class="btn btn-secondary">Cancelar</a>
+    <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="recorrente" name="recorrente" {{ 'checked' if
+            transacao.recorrente else '' }}>
+        <label class="form-check-label" for="recorrente">
+            Repetir mensalmente por 1 ano
+            {% if transacao.meses_repeticao > 0 %}
+            <small class="text-muted">({{ 12 - transacao.meses_repeticao }} meses restantes)</small>
+            {% endif %}
+        </label>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-2 mb-4">Atualizar</button>
+    <a href="{{ url_for('main.listar_transacoes') }}" class="btn btn-secondary mt-2 mb-4">Cancelar</a>
 </form>
 {% endblock %}

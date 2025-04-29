@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Transações Recorrentes</h2>
+
+{% if current_user.is_admin %}
+<div class="mb-4">
+    <form method="get" class="row g-3">
+        <div class="col-md-6">
+            <select name="user_id" class="form-select">
+                <option value="">Todos os usuários</option>
+                {% for usuario in usuarios %}
+                <option value="{{ usuario.uid }}" {% if user_id_filtro==usuario.uid %}selected{% endif %}>
+                    {{ usuario.email }} ({{ usuario.uid[:8] }}...)
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+            <a href="{{ url_for('main.transacoes_recorrentes') }}" class="btn btn-outline-secondary">Limpar</a>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+<table class="table table-striped mt-3">
+    <thead>
+        <tr>
+            <th>Descrição</th>
+            <th>Valor</th>
+            <th>Próxima Ocorrência</th>
+            <th>Repetições Restantes</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for transacao in transacoes %}
+        <tr>
+            <td>{{ transacao.descricao }}<i class="bi bi-arrow-repeat" title="Recorrente por 1 ano"></i></td>
+            <td class="{{ 'text-success' if transacao.tipo == 'receita' else 'text-danger' }}">
+                R$ {{ "%.2f"|format(transacao.valor) }}
+            </td>
+            <td>
+                {{ (transacao.data_original + relativedelta(months=+transacao.meses_repeticao+1)).strftime('%d/%m/%Y
+                %H:%M') }}
+            </td>
+            <td>{{ 12 - transacao.meses_repeticao }}</td>
+            <td>
+                <a href="{{ url_for('main.editar_transacao', id=transacao.id) }}"
+                    class="btn btn-sm btn-outline-secondary text mb-0"
+                    style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: 1rem; --bs-btn-font-size: .75rem;">Alterar</a>
+                <a href="{{ url_for('main.excluir_transacao', id=transacao.id) }}" class="btn btn-sm btn-danger"
+                    onclick="return confirm('Tem certeza que deseja excluir esta transação?')"
+                    style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: 1rem; --bs-btn-font-size: .75rem;">Excluir</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

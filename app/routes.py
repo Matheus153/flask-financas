@@ -2,7 +2,9 @@ from functools import wraps
 from flask import Blueprint, abort, render_template, request, redirect, url_for, flash
 from app import db, login_manager, mail, API_KEY
 from app.models import Transacao, Categoria, User
+from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 from flask_login import login_user, logout_user, current_user, login_required
 from flask_mail import Message
 from firebase_admin import auth as firebase_auth
@@ -17,6 +19,40 @@ main_routes = Blueprint('main', __name__)
 
 # Configurar LoginManager
 login_manager.login_view = 'main.login'
+
+def criar_transacao_recorrente():
+    with main_routes.app_context():
+        hoje = datetime.now()
+        transacoes = Transacao.query.filter(
+            Transacao.recorrente == True,
+            Transacao.meses_repeticao < 12
+        ).all()
+
+        for transacao in transacoes:
+            # Calcula a próxima data (mesmo dia, mês seguinte)
+            nova_data = transacao.data_original + relativedelta(months=+transacao.meses_repeticao+1)
+            
+            nova_transacao = Transacao(
+                descricao=transacao.descricao,
+                valor=transacao.valor,
+                tipo=transacao.tipo,
+                categoria_id=transacao.categoria_id,
+                user_id=transacao.user_id,
+                data=nova_data,
+                recorrente=True,
+                meses_repeticao=transacao.meses_repeticao + 1,
+                data_original=transacao.data_original
+            )
+            
+            db.session.add(nova_transacao)
+            transacao.meses_repeticao += 1
+        
+        db.session.commit()
+
+# Agendador que roda diariamente às 00:01
+scheduler = BackgroundScheduler()
+scheduler.add_job(func=criar_transacao_recorrente, trigger='cron', hour=0, minute=1)
+scheduler.start()
 
 # Função para promover usuário a admin
 def make_admin(uid):
@@ -334,6 +370,43 @@ def listar_transacoes():
                            usuarios=usuarios,
                            user_id_filtro=user_id_filtro)
 
+# Adicione esta rota para verificar transações recorrentes
+@main_routes.route('/transacoes/recorrentes')
+@login_required
+def transacoes_recorrentes():
+    user_id_filtro = request.args.get('user_id')
+    
+    # Construir query base
+    if current_user.is_admin:
+        usuarios = firebase_auth.list_users().iterate_all()
+        base_query = Transacao.query.filter_by(recorrente=True)
+        
+        if user_id_filtro:
+            try:
+                firebase_auth.get_user(user_id_filtro)
+                base_query = base_query.filter_by(user_id=user_id_filtro)
+            except firebase_auth.UserNotFoundError:
+                flash('Usuário não encontrado', 'danger')
+                return redirect(url_for('main.transacoes_recorrentes'))
+    else:
+        base_query = Transacao.query.filter_by(
+            user_id=current_user.id,
+            recorrente=True
+        )
+        usuarios = []
+
+    # Ordenar e obter resultados
+    transacoes = base_query.order_by(Transacao.data.desc()).all()
+    
+    return render_template('recorrentes.html', 
+                         transacoes=transacoes, 
+                         relativedelta=relativedelta,
+                         usuarios=usuarios,
+                         user_id_filtro=user_id_filtro,
+                         firebase_auth=firebase_auth)
+
+
+
 @main_routes.route('/adicionar', methods=['GET', 'POST'])
 @login_required
 def adicionar_transacao():
@@ -346,6 +419,8 @@ def adicionar_transacao():
         categoria_id = int(request.form['categoria'])
         # (antigo formato) data = datetime.strptime(request.form['data'], '%Y-%m-%d')
         data = datetime.strptime(request.form['data'], '%Y-%m-%dT%H:%M')
+
+        recorrente = 'recorrente' in request.form
         
         nova_transacao = Transacao(
             user_id=current_user.id,
@@ -353,7 +428,9 @@ def adicionar_transacao():
             valor=valor,
             tipo=tipo,
             categoria_id=categoria_id,
-            data=data
+            data=data,
+            recorrente=recorrente,
+            data_original=data if recorrente else None
         )
         
         db.session.add(nova_transacao)
@@ -518,6 +595,25 @@ def editar_transacao(id):
         transacao.tipo = request.form['tipo']
         transacao.categoria_id = int(request.form['categoria'])
         transacao.data = datetime.strptime(request.form['data'], '%Y-%m-%dT%H:%M')
+
+        # Segurança para não permitir alterações em transações recorrentes
+        if transacao.meses_repeticao > 0 and transacao.data_original != transacao.data:
+            flash('Não é possível alterar a data de transações recorrentes já geradas', 'warning')
+            return redirect(url_for('main.editar_transacao', id=id))
+        
+         # Atualiza recorrência
+        novo_recorrente = 'recorrente' in request.form
+        
+        if transacao.recorrente and not novo_recorrente:
+            # Se estava ativo e foi desativado
+            transacao.recorrente = False
+            transacao.meses_repeticao = 0
+            transacao.data_original = None
+        elif not transacao.recorrente and novo_recorrente:
+            # Se estava inativo e foi ativado
+            transacao.recorrente = True
+            transacao.data_original = transacao.data
+            transacao.meses_repeticao = 0
         
         db.session.commit()
         flash('Transação atualizada com sucesso!', 'success')
