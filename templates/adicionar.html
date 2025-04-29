@@ -36,6 +36,12 @@
         <input type="datetime-local" class="form-control" id="data" name="data" required
             value="{{ datetime.now().strftime('%Y-%m-%dT%H:%M') }}">
     </div>
+    <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="recorrente" name="recorrente">
+        <label class="form-check-label" for="recorrente">
+            Repetir mensalmente por 1 ano
+        </label>
+    </div>
 
     <button type="submit" class="btn btn-primary mt-2 mb-4">Salvar</button>
     <a href="{{ url_for('.index') }}" class="btn btn-outline-secondary mt-2 mb-4">Cancelar</a>
