@@ -1,6 +1,5 @@
 from functools import wraps
-
-from flask import Blueprint, abort, render_template, request, redirect, url_for, flash
+from flask import Blueprint, abort, jsonify, render_template, request, redirect, url_for, flash
 from app import db, login_manager, mail, API_KEY, create_app, cred
 from app.models import Transacao, Categoria, User
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -14,6 +13,7 @@ import firebase_admin
 import plotly.express as px
 import pandas as pd
 import requests
+import os
 import re
 
 
@@ -199,6 +199,11 @@ def load_user(user_id):
     try:
         user_record = firebase_auth.get_user(user_id)
 
+        # Determina o provedor
+        provider = 'email'
+        if user_record.provider_data:
+            provider = user_record.provider_data[0].provider_id.split('.')[0]
+
          # Verifica custom claims para admin
         is_admin = user_record.custom_claims.get('admin', False) if user_record.custom_claims else False
 
@@ -210,7 +215,9 @@ def load_user(user_id):
             uid=user_record.uid, 
             email=user_record.email,
             name=user_doc.get('full_name') if user_doc.exists else "Usuário", 
-            is_admin=is_admin)
+            is_admin=is_admin,
+            provider=provider
+        )
     
     except Exception as e:
         print(f"Erro ao carregar usuário: {str(e)}")
@@ -270,7 +277,19 @@ def login():
         except Exception as e:
             flash(f'Erro de conexão: {str(e)}', 'danger')
     
-    return render_template('login.html')
+    return render_template('login.html', os=os)
+
+
+@main_routes.route('/login/social', methods=['POST'])
+def login_social():
+    try:
+        id_token = request.json.get('token')
+        decoded_token = firebase_auth.verify_id_token(id_token)
+        user = load_user(decoded_token['uid'])
+        login_user(user)
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 401
 
 @main_routes.route('/logout')
 @login_required

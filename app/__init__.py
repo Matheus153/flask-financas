@@ -4,6 +4,7 @@ from flask_login import LoginManager
 from flask_mail import Mail, Message
 from firebase_admin import credentials
 from flask_migrate import Migrate
+from flask_wtf.csrf import CSRFProtect
 import firebase_admin
 import os
 from dotenv import load_dotenv
@@ -11,6 +12,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 API_KEY = os.getenv('API_KEY')
+
+csrf = CSRFProtect()
 
 login_manager = LoginManager()
 
@@ -51,6 +54,8 @@ def create_app():
     app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
     app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 
+    csrf.init_app(app)
+    
     mail.init_app(app)
 
     # Configuracoes do Firebase # substituído por firebase_config
