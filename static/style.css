@@ -99,6 +99,26 @@ body {
     height: 400px;
 }
 
+.subscribe {
+    border-radius: 6px;
+    display:flex;
+    flex-direction: column;
+    padding: 1.2rem;
+    width: 38vh;
+    background:rgb(239, 238, 238);
+    margin-top: 1.5rem;
+}
+
+.link-blue {
+    text-decoration: none;
+    color:rgb(65, 100, 196);
+    transition: all 0.3s ease;
+}
+
+.link-blue:hover {
+    transform: translateY(-1px);
+}
+
 .card {
     margin-bottom: 2rem;
     border-radius: 10px;

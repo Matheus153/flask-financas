@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>Recuperar Senha</h2>
+<h2 class="mb-4">Recuperar Senha</h2>
 <form method="POST">
-    <div class="mb-3">
+    <div class="mb-4">
         <label>Email cadastrado</label>
         <input type="email" name="email" class="form-control" required>
     </div>
     <button type="submit" class="btn btn-primary">Enviar Link de Recuperação</button>
-    <a href="{{ url_for('main.login') }}" class="btn btn-link">Voltar ao login</a>
+    <a class="link-blue" href="{{ url_for('main.login') }}" class="btn btn-link">Voltar ao login</a>
 </form>
 {% endblock %}

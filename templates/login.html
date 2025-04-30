@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>Login</h2>
+<h2 class="mb-4">Acesse sua conta</h2>
 <form method="POST">
     <div class="mb-3">
         <label>Email</label>
@@ -12,9 +12,23 @@
         <input type="password" name="password" class="form-control" required>
     </div>
     <button type="submit" class="btn btn-primary">Entrar</button>
-    <div class="mt-3">
-        <a href="{{ url_for('main.cadastrar') }}">Criar nova conta</a> |
-        <a href="{{ url_for('main.recuperar_senha') }}">Esqueci a senha</a>
+    <div class="mt-3 mb-3">
+        <a class="link-blue" href="{{ url_for('main.recuperar_senha') }}">Esqueci minha senha</a>
+    </div>
+
+    <div class="social-login mt-4">
+        <button onclick="loginWithGoogle()" class="btn btn-danger mb-2">
+            Entrar com <i class="fab fa-google" title="logo google"></i>
+        </button>
+
+        <button onclick="loginWithGithub()" class="btn btn-dark mb-2">
+            Entrar com <i class="fab fa-github" title="logo github"></i>
+        </button>
+    </div>
+
+    <div class="subscribe">
+        <label>Não tem uma conta?</label>
+        <a class="link-blue" href="{{ url_for('main.cadastrar') }}">Se inscreva gratuitamente</a>
     </div>
 </form>
 {% endblock %}
