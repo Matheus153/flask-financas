@@ -2,7 +2,8 @@
 
 {% block content %}
 <h2 class="mb-4">Acesse sua conta</h2>
-<form method="POST">
+<form method="POST" action="{{ url_for('main.login') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="mb-3">
         <label>Email</label>
         <input type="email" name="email" class="form-control" required>
@@ -16,19 +17,102 @@
         <a class="link-blue" href="{{ url_for('main.recuperar_senha') }}">Esqueci minha senha</a>
     </div>
 
-    <div class="social-login mt-4">
-        <button onclick="loginWithGoogle()" class="btn btn-danger mb-2">
-            Entrar com <i class="fab fa-google" title="logo google"></i>
-        </button>
-
-        <button onclick="loginWithGithub()" class="btn btn-dark mb-2">
-            Entrar com <i class="fab fa-github" title="logo github"></i>
-        </button>
-    </div>
-
-    <div class="subscribe">
-        <label>Não tem uma conta?</label>
-        <a class="link-blue" href="{{ url_for('main.cadastrar') }}">Se inscreva gratuitamente</a>
-    </div>
 </form>
+
+<!-- Divisor social -->
+<div class="position-relative my-4">
+    <hr>
+    <div class="position-absolute top-50 start-50 translate-middle bg-white px-3">ou</div>
+</div>
+
+<div class="social-login mt-4">
+    <button onclick="loginWithGoogle()" class="btn btn-danger mb-2">
+        Entrar com <i class="fab fa-google" title="logo google"></i>
+    </button>
+
+    <button onclick="loginWithGithub()" class="btn btn-dark mb-2">
+        Entrar com <i class="fab fa-github" title="logo github"></i>
+    </button>
+</div>
+
+<div class="subscribe">
+    <label>Não tem uma conta?</label>
+    <a class="link-blue" href="{{ url_for('main.cadastrar') }}">Se inscreva gratuitamente</a>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+<script>
+    // Configuração do Firebase a partir das variáveis de ambiente
+    const firebaseConfig = {
+        apiKey: "{{ os.getenv('API_KEY') }}",
+        authDomain: "{{ os.getenv('PROJECT_ID') }}.firebaseapp.com",
+        projectId: "{{ os.getenv('PROJECT_ID') }}",
+        storageBucket: "{{ os.getenv('PROJECT_ID') }}.firebasestorage.app",
+        messagingSenderId: "{{ os.getenv('MESSAGING_SENDER_ID') }}",
+        appId: "{{ os.getenv('APP_ID') }}"
+    };
+
+    // Inicialização do Firebase
+    const firebaseApp = firebase.initializeApp(firebaseConfig);
+
+    // Funções de login social
+    const handleSocialLogin = async (provider) => {
+        try {
+            const result = await firebase.auth().signInWithPopup(provider);
+            const token = await result.user.getIdToken();
+
+            const response = await fetch("{{ url_for('main.login_social') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': "{{ csrf_token() }}"
+                },
+                body: JSON.stringify({ token })
+            });
+
+            if (response.ok) {
+                window.location.href = "{{ url_for('main.index') }}";
+            } else {
+                const error = await response.json();
+                showToast(error.message || 'Erro no login');
+            }
+        } catch (error) {
+            showToast(error.message || 'Erro na autenticação');
+        }
+    };
+
+    const loginWithGoogle = () => {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.addScope('profile');
+        provider.addScope('email');
+        handleSocialLogin(provider);
+    };
+
+    const loginWithGithub = () => {
+        const provider = new firebase.auth.GithubAuthProvider();
+        provider.addScope('read:user');
+        handleSocialLogin(provider);
+    };
+
+    // Sistema de notificação
+    function showToast(message, type = 'danger') {
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white bg-${type} border-0`;
+        toast.setAttribute('role', 'alert');
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+
+        const container = document.querySelector('.container');
+        container.prepend(toast);
+
+        new bootstrap.Toast(toast, { autohide: true, delay: 5000 }).show();
+    }
+</script>
 {% endblock %}

@@ -47,6 +47,8 @@ Portanto, ao clonar o projeto crie um arquivo chamado ".env" na raiz do projeto 
   AUTH_PROVIDER_X509_CERT_URL=vem_do_arquivo_json_firebase
   CLIENT_X509_CERT_URL=vem_do_arquivo_json_firebase
   UNIVERSE_DOMAIN=vem_do_arquivo_json_firebase
+  MESSAGING_SENDER_ID=disponivel_nas_configuracoes_projeto_firebase
+  APP_ID=disponivel_nas_configuracoes_projeto_firebase
   SQLALCHEMY_DATABASE_URI=url_banco_de_dados
 ```
 
