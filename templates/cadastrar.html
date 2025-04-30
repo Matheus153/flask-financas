@@ -1,9 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>Cadastrar</h2>
+<h2 class="mb-4">Cadastra-se gratuitamente</h2>
 <form method="POST">
-
     <div class="mb-3">
         <label>Nome Completo</label>
         <input type="text" name="fullname" class="form-control" required>
@@ -28,6 +27,6 @@
     </div>
 
     <button type="submit" class="btn btn-primary">Cadastrar</button>
-    <a href="{{ url_for('main.login') }}" class="btn btn-link">Já tem conta? Faça login</a>
+    <a class="link-blue" href="{{ url_for('main.login') }}" class="btn btn-link">Já tem conta? Faça login</a>
 </form>
 {% endblock %}
