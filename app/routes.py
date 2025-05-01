@@ -1,6 +1,6 @@
 from functools import wraps
 from flask import Blueprint, abort, jsonify, render_template, request, redirect, url_for, flash
-from app import db, login_manager, mail, API_KEY, create_app, cred
+from app import db, login_manager, mail, API_KEY, create_app, cred, csrf
 from app.models import Transacao, Categoria, User
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
@@ -200,9 +200,10 @@ def load_user(user_id):
         user_record = firebase_auth.get_user(user_id)
 
         # Determina o provedor
-        provider = 'email'
+        # provider = 'email'
+
         if user_record.provider_data:
-            provider = user_record.provider_data[0].provider_id.split('.')[0]
+            provider = user_record.provider_data[0].provider_id.split('.')[0] if user_record.provider_data else 'password'
 
          # Verifica custom claims para admin
         is_admin = user_record.custom_claims.get('admin', False) if user_record.custom_claims else False
@@ -214,7 +215,7 @@ def load_user(user_id):
         return User(
             uid=user_record.uid, 
             email=user_record.email,
-            name=user_doc.get('full_name') if user_doc.exists else "Usuário", 
+            name=user_doc.get('full_name') if user_doc.exists else user_record.display_name, 
             is_admin=is_admin,
             provider=provider
         )
@@ -223,70 +224,111 @@ def load_user(user_id):
         print(f"Erro ao carregar usuário: {str(e)}")
         return None
 
+
 @main_routes.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        
-        # Configurações do Firebase
-        FIREBASE_API_KEY = API_KEY # Encontre no Firebase Console
-        
-        # Endpoint de autenticação do Firebase
-        url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
-        
-        payload = {
-            "email": email,
-            "password": password,
-            "returnSecureToken": True
-        }
+
+        # Verifica se o e-mail já está registrado com provedor social
+        try:
+            # Verificar se já existe conta com este e-mail
+            user_record = firebase_auth.get_user_by_email(email)
+            
+            # Se existir e for provedor social
+            if any(provider.provider_id != 'password' for provider in user_record.provider_data):
+                flash('Este e-mail está associado a um login social', 'warning')
+                return redirect(url_for('main.login'))
+                
+        except firebase_auth.UserNotFoundError:
+            pass  # Usuário não existe, prosseguir com login normal
         
         try:
-            # Faz a requisição para a API do Firebase
+
+            # Fluxo normal de login com email/senha
+            url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={API_KEY}"
+            payload = {
+                "email": email,
+                "password": password,
+                "returnSecureToken": True
+            }
+
             response = requests.post(url, json=payload)
             data = response.json()
-            
+
             if response.status_code == 200:
-                # Verifica o token JWT usando o Admin SDK
                 decoded_token = firebase_auth.verify_id_token(
                     data['idToken'],
-                    clock_skew_seconds=60)
-                
-                user = load_user(decoded_token['uid'])
-                
+                    clock_skew_seconds=60
+                )
+
                 user_id = decoded_token['uid']
-            
+                user = load_user(user_id)
                 login_user(user)
 
+                # Lógica de primeiro admin
                 if configurar_primeiro_admin(user_id):
-                    firebase_auth.set_custom_user_claims(user_id, {'admin': True})
-                
+                    firebase_auth.set_custom_user_claims(
+                        user_id, 
+                        {'admin': True}
+                    )
+
                 flash('Login realizado com sucesso!', 'success')
                 return redirect(url_for('main.index'))
-            
-            else:
-                # Trata erros comuns
-                error_msg = data.get('error', {}).get('message', 'Erro desconhecido')
-                if error_msg == "INVALID_PASSWORD":
-                    flash('Senha incorreta', 'danger')
-                elif error_msg == "EMAIL_NOT_FOUND":
-                    flash('Email não cadastrado', 'danger')
-                else:
-                    flash(f'Erro ao logar: {error_msg}, usuário não cadastrado', 'danger')
-        
-        except Exception as e:
-            flash(f'Erro de conexão: {str(e)}', 'danger')
-    
-    return render_template('login.html', os=os)
 
+            # Tratamento refinado de erros
+            error_map = {
+                'INVALID_PASSWORD': 'Senha incorreta',
+                'EMAIL_NOT_FOUND': 'Email não cadastrado',
+                'USER_DISABLED': 'Conta desativada',
+                'INVALID_LOGIN_CREDENTIALS': 'Verifique se seu e-mail e senha estão corretos',
+                'TOO_MANY_ATTEMPTS_TRY_LATER': 'Muitas tentativas. Tente mais tarde.'
+            }
+            
+            error_code = data.get('error', {}).get('message', 'UNKNOWN_ERROR')
+            flash(error_map.get(error_code, f'Erro no login: {error_code}'), 'danger')
+
+        except firebase_auth.UserNotFoundError:
+            flash('Email não cadastrado', 'danger')
+        except firebase_auth.ErrorInfo as e:
+            flash(f'Erro de autenticação: {str(e)}', 'danger')
+        except Exception as e:
+            flash(f'Erro inesperado: {str(e)}', 'danger')
+
+    return render_template('login.html', os=os)
 
 @main_routes.route('/login/social', methods=['POST'])
 def login_social():
     try:
         id_token = request.json.get('token')
         decoded_token = firebase_auth.verify_id_token(id_token)
-        user = load_user(decoded_token['uid'])
+        user_id = decoded_token['uid']
+        
+        # Obter referência do Firestore
+        db_firestore = firestore.client()
+        user_ref = db_firestore.collection('usuarios').document(user_id)
+        
+        # Verificar se o usuário já existe
+        if not user_ref.get().exists:
+            # Criar novo documento com dados do provedor social
+            user_data = {
+                'created_at': firestore.SERVER_TIMESTAMP,
+                'email': decoded_token.get('email'),
+                'full_name': decoded_token.get('name') or 'Usuário',
+                'provider': decoded_token.get('firebase', {}).get('sign_in_provider'),
+                'admin': False
+            }
+            user_ref.set(user_data)
+        
+            # Verifica se é o primeiro usuário
+            if configurar_primeiro_admin(user_id):
+                user_ref.update({'admin': True})
+        
+        # Carregar e logar usuário
+        user = load_user(user_id)
         login_user(user)
+        
         return jsonify({'success': True}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 401
@@ -300,6 +342,8 @@ def logout():
 @main_routes.route('/cadastrar', methods=['GET', 'POST'])
 def cadastrar():
     if request.method == 'POST':
+        # Valide o CSRF token manualmente
+        csrf.protect() 
         full_name = request.form['fullname']
         email = request.form['email']
         password = request.form['password']
@@ -324,13 +368,15 @@ def cadastrar():
                 flash(error, 'danger')
             return render_template('cadastrar.html', email=email)
           
+        user = None  # Inicializa a variável
         try:
-            # Cria usuário no Firebase
+            # Tenta criar o usuário
             user = firebase_auth.create_user(
                 email=email,
                 password=password
             )
-            # Salva nome no Firestore
+            
+            # Salva no Firestore
             db_firestore = firestore.client()
             usuarios_ref = db_firestore.collection('usuarios')
             usuarios_ref.document(user.uid).set({
@@ -341,13 +387,17 @@ def cadastrar():
 
             flash('Cadastro realizado com sucesso! Faça login.', 'success')
             return redirect(url_for('main.login'))
-        
+
         except firebase_auth.EmailAlreadyExistsError:
-            flash('Este email já está cadastrado.', 'danger')
+            flash('Este email já está cadastrado.', 'warning')
+            return redirect(url_for('main.cadastrar'))
+            
         except Exception as e:
-            # Rollback em caso de erro
-            firebase_auth.delete_user(user.uid)
-            flash('Erro ao cadastrar: ' + str(e), 'danger')
+            # Faz rollback apenas se o usuário foi criado
+            if user:
+                firebase_auth.delete_user(user.uid)
+            flash(f'Erro ao cadastrar: {str(e)}', 'danger')
+            return redirect(url_for('main.cadastrar'))
     
     return render_template('cadastrar.html')
 
@@ -362,7 +412,7 @@ def recuperar_senha():
             
             # Simulação de envio de email (implemente seu serviço de email aqui)
             # print(f'Link de redefinição: {link}')
-            flash('Email de recuperação enviado! Verifique sua caixa postal.', 'success')
+            flash('Email de recuperação enviado! Verifique sua caixa postal e a pasta spam.', 'success')
 
             msg = Message(
             'Redefinir Senha',

@@ -42,9 +42,9 @@ firebase_admin.initialize_app(cred)
 
 def create_app():
     app = Flask(__name__, template_folder='../templates', static_folder='../static')
-    # app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(app.instance_path, "financas.db")}'
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['WTF_CSRF_SECRET_KEY'] = os.getenv('CSRF_SECRET_KEY')
     app.secret_key = os.getenv('SECRET_KEY')
 
     # Configurações de Email

@@ -3,6 +3,7 @@
 {% block content %}
 <h2 class="mb-4">Cadastra-se gratuitamente</h2>
 <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="mb-3">
         <label>Nome Completo</label>
         <input type="text" name="fullname" class="form-control" required>
