@@ -302,7 +302,10 @@ def login():
 def login_social():
     try:
         id_token = request.json.get('token')
-        decoded_token = firebase_auth.verify_id_token(id_token, clock_skew_seconds=60)
+        decoded_token = firebase_auth.verify_id_token(
+            id_token, 
+            check_revoked=True, 
+            clock_skew_seconds=60)
         user_id = decoded_token['uid']
         
         # Obter referência do Firestore
