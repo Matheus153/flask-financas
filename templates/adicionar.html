@@ -7,7 +7,7 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="mb-3">
         <label for="descricao" class="form-label">Descrição</label>
-        <input type="text" class="form-control" id="descricao" name="descricao" required>
+        <input type="text" class="form-control" id="descricao" name="descricao" maxlength="100" required>
     </div>
 
     <div class="mb-3">
