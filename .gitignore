@@ -4,4 +4,8 @@
 /firebase-config.json
 /migrations
 .env
-migrate_sqlite_to_postgres.py
+/migrate_sqlite_to_postgres.py
+/teste_forecast.py
+/teste_prev.py
+/teste.py
+/train_models.py
