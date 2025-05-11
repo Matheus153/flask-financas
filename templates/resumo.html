@@ -41,9 +41,16 @@
         <div class="col">
             <div class="card h-100">
                 <div class="card-body">
+                    {% if graficos.despesas %}
                     <div class="grafico-responsive">
                         {{ graficos.despesas|safe }}
                     </div>
+                    {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-pie-chart"></i>
+                        Não foi possível gerar o gráfico de despesas devido à falta de dados.
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -51,9 +58,16 @@
         <div class="col">
             <div class="card h-100">
                 <div class="card-body">
+                    {% if graficos.comparativo %}
                     <div class="grafico-responsive">
                         {{ graficos.comparativo|safe }}
                     </div>
+                    {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-bar-chart"></i>
+                        Não foi possível gerar o gráfico comparativo devido à falta de dados.
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

@@ -412,14 +412,14 @@ def recuperar_senha():
             
             # Simulação de envio de email (implemente seu serviço de email aqui)
             # print(f'Link de redefinição: {link}')
-            flash('Email de recuperação enviado! Verifique sua caixa postal e a pasta spam.', 'success')
+            flash('Email de recuperação enviado! Verifique sua caixa de entrada e a pasta de spam.', 'success')
 
             msg = Message(
-            'Redefinir Senha',
+            'Redefinição de Senha',
             sender='flaskfinances@gmail.com',
             recipients=[email]
             )
-            msg.body = f'Clique para redefinir sua senha: {link}'
+            msg.body = f"Olá, Recebemos uma solicitação para redefinir a senha da sua conta em nossa plataforma.\n\nPara continuar com a redefinição, clique no link abaixo ou copie e cole o endereço em seu navegador:\n\n{link}\n\nApós concluir o processo, você poderá definir uma nova senha para acessar sua conta com segurança.\n\nSe você não solicitou esta alteração, por favor, ignore este e-mail. Sua conta continuará segura.\n\nAtenciosamente, Equipe Insight Finance!\n\nEste é um e-mail automático. Por favor, não responda diretamente a esta mensagem. Adicione nosso endereço aos seus contatos para garantir o recebimento de nossos comunicados."
             mail.send(msg)
 
             return redirect(url_for('main.login'))
@@ -586,9 +586,11 @@ def excluir_transacao(id):
 @main_routes.route('/resumo')
 @login_required
 def resumo():
-
-    user_id_filtro = request.args.get('user_id')
+    graficos = {}
+    resumo_categorias = []
+    transacoes_recentes = []
     usuarios = []
+    user_id_filtro = request.args.get('user_id')
 
     try:
         # Verifica se é admin e aplica filtros
@@ -604,11 +606,10 @@ def resumo():
                 except firebase_auth.UserNotFoundError:
                     flash('Usuário não encontrado', 'danger')
                     return redirect(url_for('main.resumo'))
-
         else:
             base_query = Transacao.query.filter_by(user_id=current_user.id)
 
-        # Resumo por categoria (usando a base_query)
+        # Resumo por categoria
         resumo_categorias = (
             base_query.join(Categoria)
             .with_entities(
@@ -628,96 +629,80 @@ def resumo():
             .all()
         )
 
-         # Criar DataFrame para análise
+        # Criar DataFrame para análise
         df = pd.DataFrame([{
             'Categoria': t.categoria_rel.nome,
             'Valor': t.valor,
             'Tipo': t.tipo,
             'Data': t.data
         } for t in transacoes_recentes])
-        
-        # Gráfico 1: Distribuição de Despesas por Categoria (Pizza)
-        fig_despesas = px.pie(
-            df[df['Tipo'] == 'despesa'],
-            names='Categoria',
-            values='Valor',
-            title='Distribuição de Despesas por Categoria',
-            hole=0.4,
-            color_discrete_sequence=px.colors.qualitative.Set3
-        )
 
-        fig_despesas.update_layout(
-            font=dict(
-                family="Poppins, sans-serif"
+        # Gráfico 1: Despesas por Categoria
+        if not df.empty and 'despesa' in df['Tipo'].values:
+            fig_despesas = px.pie(
+                df[df['Tipo'] == 'despesa'],
+                names='Categoria',
+                values='Valor',
+                title='Distribuição de Despesas por Categoria',
+                hole=0.4,
+                color_discrete_sequence=px.colors.qualitative.Set3
             )
-        )
+            fig_despesas.update_layout(font=dict(family="Poppins, sans-serif"))
 
-        
-        # Gráfico 2: Comparativo Receitas vs Despesas (Barras)
-        df_agg = df.groupby('Tipo', as_index=False).agg({'Valor': 'sum'})
-        df_agg = df_agg.sort_values(by='Valor', ascending=False)
-        # Criar coluna com valores formatados no padrão BR (ex: 1.200)
-        df_agg['Valor_formatado'] = df_agg['Valor'].apply(
-            lambda x: f"{x:,.0f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        )
+            graficos['despesas'] = fig_despesas.to_html(full_html=False)
+        else:
+            pass
 
-        fig_comparativo = px.bar(
-            df_agg,
-            x='Tipo',
-            y='Valor',
-            title='Receitas vs Despesas',
-            color='Tipo',
-            text='Valor_formatado',
-            color_discrete_map={
-                'receita': '#57C7A2',
-                'despesa': '#F06960'
-            }
-        )
+        # Gráfico 2: Comparativo Receitas vs Despesas
+        if not df.empty and len(df['Tipo'].unique()) > 0:
+            df_agg = df.groupby('Tipo', as_index=False).agg({'Valor': 'sum'})
+            
+            if not df_agg.empty:
+                df_agg['Valor_formatado'] = df_agg['Valor'].apply(
+                    lambda x: f"{x:,.0f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                )
 
-        # Update layout to remove background
-        fig_comparativo.update_layout(
-            plot_bgcolor='rgba(0,0,0,0)',  # Set plot background to transparent
-            paper_bgcolor='rgba(0,0,0,0)',  # Set paper background to transparent
-            yaxis_title='Valor em (R$)',
-            font=dict(
-                family="Poppins, sans-serif"
-            )
-        )
+                fig_comparativo = px.bar(
+                    df_agg,
+                    x='Tipo',
+                    y='Valor',
+                    title='Receitas vs Despesas',
+                    color='Tipo',
+                    text='Valor_formatado',
+                    color_discrete_map={
+                        'receita': '#57C7A2',
+                        'despesa': '#F06960'
+                    }
+                )
+                fig_comparativo.update_layout(
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    yaxis_title='Valor em (R$)',
+                    font=dict(family="Poppins, sans-serif")
+                )
 
-        fig_comparativo.update_traces(
-            textposition='outside',
-            textfont_size=10
-        )
+                fig_comparativo.update_traces(
+                    textposition='outside',
+                    textfont_size=10
+                )
 
-        # Substituir os valores do eixo y por strings formatadas ao estilo brasileiro
-        ticks = df_agg['Valor'].max()
-        tick_vals = list(range(0, int(ticks) + 1, int(ticks / 5)))  # 5 ticks
-        tick_text = [f"{v:,.0f}".replace(",", "X").replace(".", ",").replace("X", ".") for v in tick_vals]
-
-        fig_comparativo.update_yaxes(
-            tickformat=',.0f',
-            tickvals=tick_vals,
-            ticktext=tick_text,             # Sem casas decimais, com separador de milhar
-            separatethousands=True
-        )
-        
-        # Converter gráficos para HTML
-        graficos = {
-            'despesas': fig_despesas.to_html(full_html=False),
-            'comparativo': fig_comparativo.to_html(full_html=False)
-        }
-
-        return render_template(
-            'resumo.html',
-            resumo_categorias=resumo_categorias,
-            transacoes_recentes=transacoes_recentes,
-            usuarios=usuarios,
-            user_id_filtro=user_id_filtro,
-            data_atual=datetime.now().strftime('%Y-%m-%d',),
-            firebase_auth=firebase_auth,
-            graficos=graficos
-        )
+                graficos['comparativo'] = fig_comparativo.to_html(full_html=False)
+            else:
+                pass
+        else:
+            pass
 
     except Exception as e:
-        flash('Ocorreu um erro ao gerar o resumo', 'danger')
+        flash(f'Ocorreu um erro ao gerar o resumo: {str(e)}', 'danger')
         return redirect(url_for('main.index'))
+
+    return render_template(
+        'resumo.html',
+        resumo_categorias=resumo_categorias,
+        transacoes_recentes=transacoes_recentes,
+        usuarios=usuarios,
+        user_id_filtro=user_id_filtro,
+        data_atual=datetime.now().strftime('%Y-%m-%d'),
+        firebase_auth=firebase_auth,
+        graficos=graficos
+    )
