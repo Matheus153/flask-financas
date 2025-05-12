@@ -106,21 +106,5 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-<script>
-    document.querySelector('.navbar-toggler').addEventListener('click', function () {
-        const overlay = document.createElement('div');
-        overlay.className = 'mobile-overlay';
-        document.body.appendChild(overlay);
-
-        if (this.classList.contains('collapsed')) {
-            overlay.classList.add('active');
-            document.querySelectorAll('.nav-item').forEach((item, index) => {
-                item.style.setProperty('--i', index);
-            });
-        } else {
-            overlay.remove();
-        }
-    });
-</script>
 
 </html>
