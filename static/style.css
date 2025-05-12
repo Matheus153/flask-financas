@@ -208,23 +208,6 @@ body {
         margin-top: 0.5rem;
     }
 
-    /* Animação do overlay */
-    .mobile-overlay {
-        position: fixed;
-        top: 56px;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 999;
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s ease;
-    }
-
-    .mobile-overlay.active {
-        opacity: 1;
-        visibility: visible;
-    }
 }
 
 /* Ajustes gerais de responsividade */
