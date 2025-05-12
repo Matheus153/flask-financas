@@ -659,6 +659,7 @@ def resumo():
         # Gráfico 2: Comparativo Receitas vs Despesas
         if not df.empty and len(df['Tipo'].unique()) > 0:
             df_agg = df.groupby('Tipo', as_index=False).agg({'Valor': 'sum'})
+            df_agg = df_agg.sort_values(by='Valor', ascending=False)
             
             if not df_agg.empty:
                 df_agg['Valor_formatado'] = df_agg['Valor'].apply(
@@ -687,6 +688,18 @@ def resumo():
                 fig_comparativo.update_traces(
                     textposition='outside',
                     textfont_size=10
+                )
+
+                # Substituir os valores do eixo y por strings formatadas ao estilo brasileiro
+                ticks = df_agg['Valor'].max()
+                tick_vals = list(range(0, int(ticks) + 1, int(ticks / 5)))  # 5 ticks
+                tick_text = [f"{v:,.0f}".replace(",", "X").replace(".", ",").replace("X", ".") for v in tick_vals]
+
+                fig_comparativo.update_yaxes(
+                    tickformat=',.0f',
+                    tickvals=tick_vals,
+                    ticktext=tick_text,             # Sem casas decimais, com separador de milhar
+                    separatethousands=True
                 )
 
                 graficos['comparativo'] = fig_comparativo.to_html(full_html=False)
