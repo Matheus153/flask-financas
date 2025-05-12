@@ -416,7 +416,7 @@ def recuperar_senha():
 
             msg = Message(
             'Redefinição de Senha',
-            sender='flaskfinances@gmail.com',
+            sender=os.getenv('MAIL_USERNAME'),
             recipients=[email]
             )
             msg.body = f"Olá, Recebemos uma solicitação para redefinir a senha da sua conta em nossa plataforma.\n\nPara continuar com a redefinição, clique no link abaixo ou copie e cole o endereço em seu navegador:\n\n{link}\n\nApós concluir o processo, você poderá definir uma nova senha para acessar sua conta com segurança.\n\nSe você não solicitou esta alteração, por favor, ignore este e-mail. Sua conta continuará segura.\n\nAtenciosamente, Equipe Insight Finance!\n\nEste é um e-mail automático. Por favor, não responda diretamente a esta mensagem. Adicione nosso endereço aos seus contatos para garantir o recebimento de nossos comunicados."
