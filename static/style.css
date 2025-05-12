@@ -165,49 +165,65 @@ body {
 @media (max-width: 991px) {
     .navbar-collapse {
         position: fixed;
-        top: 56px; /* Altura da navbar */
-        width: 20rem;
-        border-radius: 6px;
-        left: 6px;
-        right: 0;
-        background: rgba(21, 24, 29, 0.9);
+        top: 80px;
+        left: 15px;
+        right: 15px;
+        background: rgb(35, 39, 41);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
         padding: 1rem;
-        max-height: calc(100vh - 56px);
+        max-height: calc(100vh - 70px);
         overflow-y: auto;
         z-index: 1000;
-        display: none; /* Escondido por padrão */
-        transition: all 0.3s ease-in-out;
-        transform: translateY(-20px);
         opacity: 0;
         visibility: hidden;
+        transform: translateY(-30px) scale(0.95);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        border: 1px solid rgba(255,255,255,0.1);
     }
 
     .navbar-collapse.show {
-        display: block;
-        transform: translateY(0);
         opacity: 1;
         visibility: visible;
+        transform: translateY(0) scale(1);
     }
 
     .nav-item {
-        margin: 0.5rem 0;
+        margin: 0.8rem 0;
+        opacity: 0;
+        transform: translateX(-20px);
+        transition: all 0.3s ease-out;
+    }
+
+    .navbar-collapse.show .nav-item {
+        opacity: 1;
+        transform: translateX(0);
+        transition-delay: calc(0.1s * var(--i));
     }
 
     .dropdown-menu {
         background: rgba(230, 234, 240, 0.82);
         border: none;
+        margin-top: 0.5rem;
     }
 
-    /* Overlay escuro */
+    /* Animação do overlay */
     .mobile-overlay {
         position: fixed;
-        top: 100px;
+        top: 56px;
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.7);
         z-index: 999;
-        display: none;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .mobile-overlay.active {
+        opacity: 1;
+        visibility: visible;
     }
 }
 
