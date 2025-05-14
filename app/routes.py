@@ -1,5 +1,5 @@
 from functools import wraps
-from flask import Blueprint, abort, jsonify, render_template, request, redirect, url_for, flash
+from flask import Blueprint, abort, current_app, jsonify, render_template, request, redirect, url_for, flash
 from app import db, login_manager, mail, API_KEY, create_app, cred, csrf
 from app.models import Transacao, Categoria, User
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -8,7 +8,8 @@ from dateutil.relativedelta import relativedelta
 from flask_login import login_user, logout_user, current_user, login_required
 from flask_mail import Message
 from firebase_admin import auth as firebase_auth
-from firebase_admin import firestore
+from firebase_admin import firestore, exceptions as firebase_exceptions
+from itsdangerous import URLSafeTimedSerializer
 import firebase_admin
 import plotly.express as px
 import pandas as pd
@@ -21,6 +22,19 @@ main_routes = Blueprint('main', __name__)
 
 # Configurar LoginManager
 login_manager.login_view = 'main.login'
+
+# Função de validação de senha reutilizável
+def validar_senha(password):
+    errors = []
+    if len(password) < 6:
+        errors.append("A senha deve ter pelo menos 6 caracteres")
+    if not re.search(r'[A-Z]', password):
+        errors.append("A senha deve conter pelo menos uma letra maiúscula")
+    if not re.search(r'[^A-Za-z0-9]', password):
+        errors.append("A senha deve conter pelo menos um caractere especial")
+    if not re.search(r'[0-9]', password):
+        errors.append("A senha deve conter pelo menos um número")
+    return errors
 
 def criar_transacao_recorrente():
     app = create_app()
@@ -351,20 +365,7 @@ def cadastrar():
         email = request.form['email']
         password = request.form['password']
 
-        # Validação da senha
-        errors = []
-        
-        # Mínimo 6 caracteres
-        if len(password) < 6:
-            errors.append("A senha deve ter pelo menos 6 caracteres")
-            
-        # Pelo menos uma letra maiúscula
-        if not re.search(r'[A-Z]', password):
-            errors.append("A senha deve conter pelo menos uma letra maiúscula")
-            
-        # Pelo menos um caractere especial
-        if not re.search(r'[^A-Za-z0-9]', password):
-            errors.append("A senha deve conter pelo menos um caractere especial")
+        errors = validar_senha(password)
         
         if errors:
             for error in errors:
@@ -404,36 +405,96 @@ def cadastrar():
     
     return render_template('cadastrar.html')
 
+# Modifique a rota de recuperação de senha
 @main_routes.route('/recuperar-senha', methods=['GET', 'POST'])
 def recuperar_senha():
     if request.method == 'POST':
         email = request.form['email']
         
         try:
-            # Gera link de redefinição
-            link = firebase_auth.generate_password_reset_link(email)
+            # Verificar se o usuário existe
+            user = firebase_auth.get_user_by_email(email)
             
-            # Simulação de envio de email (implemente seu serviço de email aqui)
-            # print(f'Link de redefinição: {link}')
-            flash('Email de recuperação enviado! Verifique sua caixa de entrada e a pasta de spam.', 'success')
+            # Gerar token seguro com validade de 1 hora
+            s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+            token = s.dumps(email, salt='password-reset')
+            
+            reset_link = url_for('main.redefinir_senha', token=token, _external=True)
 
+            # Enviar email personalizado
             msg = Message(
             'Redefinição de Senha',
             sender=os.getenv('MAIL_USERNAME'),
             recipients=[email]
             )
-            msg.body = f"Olá, Recebemos uma solicitação para redefinir a senha da sua conta em nossa plataforma.\n\nPara continuar com a redefinição, clique no link abaixo ou copie e cole o endereço em seu navegador:\n\n{link}\n\nApós concluir o processo, você poderá definir uma nova senha para acessar sua conta com segurança.\n\nSe você não solicitou esta alteração, por favor, ignore este e-mail. Sua conta continuará segura.\n\nAtenciosamente, Equipe Insight Finance!\n\nEste é um e-mail automático. Por favor, não responda diretamente a esta mensagem. Adicione nosso endereço aos seus contatos para garantir o recebimento de nossos comunicados."
+            msg.body = f"Olá, Recebemos uma solicitação para redefinir a senha da sua conta em nossa plataforma.\n\nPara continuar com a redefinição, clique no link abaixo ou copie e cole o endereço em seu navegador:\n\n{reset_link}\n\nApós concluir o processo, você poderá definir uma nova senha para acessar sua conta com segurança.\n\nSe você não solicitou esta alteração, por favor, ignore este e-mail. Sua conta continuará segura.\n\nAtenciosamente, Equipe Insight Finance!\n\nEste é um e-mail automático. Por favor, não responda diretamente a esta mensagem. Adicione nosso endereço aos seus contatos para garantir o recebimento de nossos comunicados."
             mail.send(msg)
 
+            flash('Email de recuperação enviado! Verifique sua caixa de entrada e a pasta spam', 'success')
             return redirect(url_for('main.login'))
-        
+
         except firebase_auth.UserNotFoundError:
             flash('Email não cadastrado.', 'danger')
         except Exception as e:
-            flash('Erro ao enviar email: ' + str(e), 'danger')
+            flash(f'Erro ao enviar email: {str(e)}', 'danger')
 
-    
     return render_template('recuperar_senha.html')
+
+# Nova rota para redefinição de senha
+@main_routes.route('/redefinir-senha/<token>', methods=['GET', 'POST'])
+def redefinir_senha(token):
+    try:
+        s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        email = s.loads(token, salt='password-reset', max_age=3600)  # 1 hora de validade
+    except:
+        flash('Link inválido ou expirado. Solicite um novo link.', 'danger')
+        return redirect(url_for('main.recuperar_senha'))
+
+    if request.method == 'POST':
+        nova_senha = request.form['password']
+        confirmacao = request.form['confirm_password']
+
+        # Validações
+        if nova_senha != confirmacao:
+            flash('As senhas não coincidem!', 'danger')
+            return render_template('redefinir_senha.html', token=token)
+
+        errors = validar_senha(nova_senha)
+        if errors:
+            for error in errors:
+                flash(error, 'danger')
+            return render_template('redefinir_senha.html', token=token)
+
+        try:
+            user = firebase_auth.get_user_by_email(email)
+            
+            # Verificar se a nova senha é diferente da atual
+            try:
+                # Tentativa de login com a nova senha para verificar se é igual
+                url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={API_KEY}"
+                response = requests.post(url, json={
+                    "email": email,
+                    "password": nova_senha,
+                    "returnSecureToken": True
+                })
+                
+                if response.status_code == 200:
+                    flash('A nova senha não pode ser igual à senha atual', 'danger')
+                    return render_template('redefinir_senha.html', token=token)
+            except:
+                pass
+
+            # Atualizar senha se todas as validações passarem
+            firebase_auth.update_user(user.uid, password=nova_senha)
+            flash('Senha redefinida com sucesso! Faça login com a nova senha.', 'success')
+            return redirect(url_for('main.login'))
+
+        except firebase_auth.ErrorInfo as e:
+            flash(f'Erro ao atualizar senha: {str(e)}', 'danger')
+        except Exception as e:
+            flash(f'Erro inesperado: {str(e)}', 'danger')
+
+    return render_template('redefinir_senha.html', token=token)
 
 @main_routes.route('/transacoes')
 @login_required
