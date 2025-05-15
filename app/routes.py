@@ -695,6 +695,49 @@ def editar_transacao(id):
                          transacao=transacao, 
                          categorias=categorias)
 
+@main_routes.route('/perfil', methods=['GET', 'POST'])
+@login_required
+def perfil():
+    try:
+        db_firestore = firestore.client()
+        user_ref = db_firestore.collection('usuarios').document(current_user.id)
+        user_doc = user_ref.get()
+
+        if request.method == 'POST':
+            csrf.protect()
+            
+            novo_nome = request.form['nome'].strip()
+            if not novo_nome:
+                flash('O nome não pode estar vazio', 'danger')
+                return redirect(url_for('main.perfil'))
+
+            # Atualizar Firestore
+            user_ref.update({'full_name': novo_nome})
+            
+            # Atualizar Firebase Auth (display name)
+            firebase_auth.update_user(
+                current_user.id,
+                display_name=novo_nome
+            )
+
+            # Atualizar usuário na sessão
+            user = load_user(current_user.id)
+            login_user(user)
+
+            flash('Nome atualizado com sucesso!', 'success')
+            return redirect(url_for('main.perfil'))
+
+        # Carregar dados atuais
+        nome_atual = user_doc.get('full_name') if user_doc.exists else current_user.name
+
+        return render_template('perfil.html', 
+                            nome_atual=nome_atual,
+                            provider=current_user.provider)
+
+    except Exception as e:
+        flash(f'Erro ao atualizar perfil: {str(e)}', 'danger')
+        return redirect(url_for('main.perfil'))
+
 @main_routes.route('/excluir/<int:id>')
 @login_required
 def excluir_transacao(id):
