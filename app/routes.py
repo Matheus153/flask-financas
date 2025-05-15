@@ -23,6 +23,24 @@ main_routes = Blueprint('main', __name__)
 # Configurar LoginManager
 login_manager.login_view = 'main.login'
 
+months = [
+    (0, 'Todos os meses'),
+    (1, 'Janeiro'),
+    (2, 'Fevereiro'),
+    (3, 'Março'),
+    (4, 'Abril'),
+    (5, 'Maio'),
+    (6, 'Junho'),
+    (7, 'Julho'),
+    (8, 'Agosto'),
+    (9, 'Setembro'),
+    (10, 'Outubro'),
+    (11, 'Novembro'),
+    (12, 'Dezembro')
+]
+
+years = [(0, 'Todos os anos')] + [(year, year) for year in range(2020, datetime.now().year + 2)]
+
 # Função de validação de senha reutilizável
 def validar_senha(password):
     errors = []
@@ -35,6 +53,12 @@ def validar_senha(password):
     if not re.search(r'[0-9]', password):
         errors.append("A senha deve conter pelo menos um número")
     return errors
+
+# Função auxiliar para obter parâmetros de data
+def get_filtro_data():
+    selected_month = request.args.get('mes', datetime.now().month, type=int)
+    selected_year = request.args.get('ano', datetime.now().year, type=int)
+    return selected_month, selected_year
 
 def criar_transacao_recorrente():
     app = create_app()
@@ -160,6 +184,7 @@ def remover_admin(uid):
 @login_required
 def index():
     user_id_filtro = request.args.get('user_id')
+    selected_month, selected_year = get_filtro_data()
     
     # Construir query base
     if current_user.is_admin:
@@ -167,15 +192,21 @@ def index():
         base_query = Transacao.query
         
         if user_id_filtro:
-            try:
-                firebase_auth.get_user(user_id_filtro)
-                base_query = base_query.filter_by(user_id=user_id_filtro)
-            except firebase_auth.UserNotFoundError:
-                flash('Usuário não encontrado', 'danger')
-                return redirect(url_for('main.index'))
+            base_query = base_query.filter_by(user_id=user_id_filtro)
     else:
         base_query = Transacao.query.filter_by(user_id=current_user.id)
         usuarios = []
+
+    # Aplicar filtros de data
+    if selected_month != 0:
+        base_query = base_query.filter(
+            db.extract('month', Transacao.data) == selected_month
+        )
+    
+    if selected_year != 0:
+        base_query = base_query.filter(
+            db.extract('year', Transacao.data) == selected_year
+        )
 
     # Cálculos usando a query base
     #saldo = se eu quisesse a soma de todos os lançamentos base_query.with_entities(db.func.sum(Transacao.valor)).scalar() or 0
@@ -206,7 +237,12 @@ def index():
                          user_id_filtro=user_id_filtro,
                          saldo=saldo,
                          receitas=receitas,
-                         despesas=despesas)
+                         despesas=despesas,
+                         selected_month=selected_month,
+                         selected_year=selected_year,
+                         months = months,
+                         years=years
+                         )
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -500,23 +536,41 @@ def redefinir_senha(token):
 @login_required
 def listar_transacoes():
     user_id_filtro = request.args.get('user_id')
+    selected_month, selected_year = get_filtro_data()
 
+    # Construir query base
     if current_user.is_admin:
+        usuarios = firebase_auth.list_users().iterate_all()
+        base_query = Transacao.query
+        
         if user_id_filtro:
-            transacoes = Transacao.query.filter_by(user_id=user_id_filtro).order_by(Transacao.data.desc()).all()
-        else:
-            transacoes = Transacao.query.order_by(Transacao.data.desc()).all()
+            base_query = base_query.filter_by(user_id=user_id_filtro)
     else:
-        transacoes = Transacao.query.filter_by(user_id=current_user.id).order_by(Transacao.data.desc()).all()
+        base_query = Transacao.query.filter_by(user_id=current_user.id)
+        usuarios = []
+
+    # Aplicar filtros de data
+    if selected_month != 0:
+        base_query = base_query.filter(
+            db.extract('month', Transacao.data) == selected_month
+        )
     
-    usuarios = firebase_auth.list_users().iterate_all() if current_user.is_admin else []
+    if selected_year != 0:
+        base_query = base_query.filter(
+            db.extract('year', Transacao.data) == selected_year
+        )
     
+    transacoes = base_query.order_by(Transacao.data.desc()).all()
 
     return render_template('transacoes.html', 
                            transacoes=transacoes, 
                            firebase_auth=firebase_auth,
                            usuarios=usuarios,
-                           user_id_filtro=user_id_filtro)
+                           user_id_filtro=user_id_filtro,
+                           selected_month=selected_month,
+                           selected_year=selected_year,
+                           months=months,
+                           years=years)
 
 # Adicione esta rota para verificar transações recorrentes
 @main_routes.route('/transacoes/recorrentes')
@@ -662,23 +716,29 @@ def resumo():
     transacoes_recentes = []
     usuarios = []
     user_id_filtro = request.args.get('user_id')
+    selected_month, selected_year = get_filtro_data()
 
     try:
-        # Verifica se é admin e aplica filtros
+         # Construir query base
         if current_user.is_admin:
             usuarios = firebase_auth.list_users().iterate_all()
             base_query = Transacao.query
             
-            # Valida o usuário do filtro
             if user_id_filtro:
-                try:
-                    firebase_auth.get_user(user_id_filtro)
-                    base_query = Transacao.query.filter_by(user_id=user_id_filtro)
-                except firebase_auth.UserNotFoundError:
-                    flash('Usuário não encontrado', 'danger')
-                    return redirect(url_for('main.resumo'))
+                base_query = base_query.filter_by(user_id=user_id_filtro)
         else:
             base_query = Transacao.query.filter_by(user_id=current_user.id)
+
+        # Aplicar filtros de data
+        if selected_month != 0:
+            base_query = base_query.filter(
+                db.extract('month', Transacao.data) == selected_month
+            )
+        
+        if selected_year != 0:
+            base_query = base_query.filter(
+                db.extract('year', Transacao.data) == selected_year
+            )
 
         # Resumo por categoria
         resumo_categorias = (
@@ -692,11 +752,18 @@ def resumo():
         )
 
         # Últimos 30 dias
-        trinta_dias_atras = datetime.now() - timedelta(days=30)
+        """ trinta_dias_atras = datetime.now() - timedelta(days=30)
         transacoes_recentes = (
             base_query
             .filter(Transacao.data >= trinta_dias_atras)
             .order_by(Transacao.data.desc())
+            .all()
+        ) """
+
+        transacoes_recentes = (
+            base_query
+            .order_by(Transacao.data.desc())
+            .limit(6)
             .all()
         )
 
@@ -788,5 +855,9 @@ def resumo():
         user_id_filtro=user_id_filtro,
         data_atual=datetime.now().strftime('%Y-%m-%d'),
         firebase_auth=firebase_auth,
-        graficos=graficos
+        graficos=graficos,
+        selected_month=selected_month,
+        selected_year=selected_year,
+        months=months,
+        years=years
     )
