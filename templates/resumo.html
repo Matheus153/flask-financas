@@ -4,9 +4,11 @@
 <div class="container-fluid">
     <h2>Resumo Financeiro</h2>
 
-    {% if current_user.is_admin %}
+
     <div class="filter-box mb-4">
         <form method="get" class="row g-3 align-items-center">
+
+            {% if current_user.is_admin %}
             <div class="col-md-5">
                 <select name="user_id" class="form-select">
                     <option value="">Todos os usuários</option>
@@ -17,24 +19,35 @@
                     {% endfor %}
                 </select>
             </div>
+            {% endif %}
+
+            <div class="col-md-3">
+                <select class="form-select" name="mes">
+                    {% for month_num, month_name in months %}
+                    <option value="{{ month_num }}" {% if month_num==selected_month %}selected{% endif %}>
+                        {{ month_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <select class="form-select" name="ano">
+                    {% for value, year in years %}
+                    <option value="{{ value }}" {% if value==selected_year %}selected{% endif %}>
+                        {{ year if value != 0 else 'Todos os anos' }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
             <div class="col-md-3">
                 <button type="submit" class="btn btn-primary">Filtrar</button>
                 <a href="{{ url_for('main.resumo') }}" class="btn btn-outline-secondary">Limpar</a>
             </div>
         </form>
-
-        {% if user_id_filtro %}
-        <div class="mt-2">
-            <small class="text-muted">
-                Filtrando por:
-                {% for usuario in usuarios %}
-                {% if usuario.uid == user_id_filtro %}{{ usuario.email }}{% endif %}
-                {% endfor %}
-            </small>
-        </div>
-        {% endif %}
     </div>
-    {% endif %}
+
 
     <!-- Seção de Gráficos -->
     <div class="row row-cols-1 row-cols-md-2 g-4">
@@ -114,7 +127,7 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header bg-info text-white">
-                    <h5 class="mb-0">Últimos 30 Dias</h5>
+                    <h5 class="mb-0">Transações recentes</h5>
                 </div>
                 <div class="card-body">
                     {% if transacoes_recentes %}
