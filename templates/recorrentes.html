@@ -42,13 +42,13 @@
         <tbody>
             {% for transacao in transacoes %}
             <tr>
-                <td>{{ transacao.descricao }}<i class="bi bi-arrow-repeat" title="Recorrente por 1 ano"></i></td>
+                <td>{{ transacao.descricao }}</td>
                 <td class="{{ 'text-success' if transacao.tipo == 'receita' else 'text-danger' }}">
                     R$ {{ "%.2f"|format(transacao.valor) }}
                 </td>
                 <td>
                     {{ (transacao.data_original + relativedelta(months=+transacao.meses_repeticao+1)).strftime('%d/%m/%Y
-                    %H:%M') }}
+                    %H:%M') }} <i class="bi bi-arrow-repeat" title="Recorrente por 1 ano"></i>
                 </td>
                 <td>{{ 12 - transacao.meses_repeticao }}</td>
                 <td>

@@ -599,37 +599,44 @@ def editar_transacao(id):
 
     if not (current_user.is_admin or transacao.user_id == current_user.id):
         abort(403)
-    
-    if request.method == 'POST':
-        transacao.descricao = request.form['descricao']
-        transacao.valor = float(request.form['valor'])
-        transacao.tipo = request.form['tipo']
-        transacao.categoria_id = int(request.form['categoria'])
-        transacao.data = datetime.strptime(request.form['data'], '%Y-%m-%dT%H:%M')
 
-        # Segurança para não permitir alterações em transações recorrentes
-        if transacao.meses_repeticao > 0 and transacao.data_original != transacao.data:
-            flash('Não é possível alterar a data de transações recorrentes já geradas', 'warning')
-            return redirect(url_for('main.editar_transacao', id=id))
-        
-         # Atualiza recorrência
-        novo_recorrente = 'recorrente' in request.form
-        
-        if transacao.recorrente and not novo_recorrente:
-            # Se estava ativo e foi desativado
-            transacao.recorrente = False
-            transacao.meses_repeticao = 0
-            transacao.data_original = None
-        elif not transacao.recorrente and novo_recorrente:
-            # Se estava inativo e foi ativado
-            transacao.recorrente = True
-            transacao.data_original = transacao.data
-            transacao.meses_repeticao = 0
-        
-        db.session.commit()
-        flash('Transação atualizada com sucesso!', 'success')
-        return redirect(url_for('main.listar_transacoes'))
-    
+    if request.method == 'POST':
+        try:
+            csrf.protect()
+            
+            # Atualizar campos básicos
+            transacao.descricao = request.form['descricao']
+            transacao.valor = float(request.form['valor'])
+            transacao.tipo = request.form['tipo']
+            transacao.categoria_id = int(request.form['categoria'])
+            transacao.data = datetime.strptime(request.form['data'], '%Y-%m-%dT%H:%M')
+
+            novo_recorrente = 'recorrente' in request.form
+
+            # Lógica de atualização de recorrência
+            if transacao.recorrente and not novo_recorrente:
+                # Desativar recorrência
+                transacao.recorrente = False
+                transacao.meses_repeticao = 0
+                transacao.data_original = None
+            elif not transacao.recorrente and novo_recorrente:
+                # Ativar recorrência
+                transacao.recorrente = True
+                transacao.data_original = transacao.data  # Define data_original inicial
+                transacao.meses_repeticao = 0
+
+            # Sincroniza data_original se for recorrente e não disparada
+            if transacao.recorrente and transacao.meses_repeticao == 0:
+                transacao.data_original = transacao.data  # Mantém sempre atualizado
+
+            db.session.commit()
+            flash('Transação atualizada com sucesso!', 'success')
+            return redirect(url_for('main.listar_transacoes'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao atualizar: {str(e)}', 'danger')
+
     return render_template('editar.html', 
                          transacao=transacao, 
                          categorias=categorias)
