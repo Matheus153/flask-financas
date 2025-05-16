@@ -18,7 +18,7 @@
     </div>
 
     <div class="mb-3">
-        <label for="valor" class="form-label">Valor</label>
+        <label for="valor" class="form-label">Valor em (R$)</label>
         <input type="number" step="0.01" class="form-control" id="valor" name="valor" value="{{ transacao.valor }}"
             required {% if transacao.meses_repeticao> 0 %}disabled{% endif %}>
     </div>

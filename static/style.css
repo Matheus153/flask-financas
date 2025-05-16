@@ -128,6 +128,39 @@ body {
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
+/* Floating Action Button */
+.fab-mobile {
+    position: fixed;
+    bottom: 3rem;
+    right: 2rem;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    text-position: center;
+    justify-content: center;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+    z-index: 1000;
+    padding: 0; 
+}
+
+.fab-mobile:hover {
+    transform: scale(1.1);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+
+.fab-mobile i {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    margin: 0; /* Remover margens padrão */
+    line-height: 1; /* Remover line-height extra */
+}
+
+
 /* Dispositivos pequenos (telefones, 576px e abaixo) */
 @media (max-width: 576px) {
     .navbar-brand {
@@ -206,8 +239,23 @@ body {
         background: rgba(230, 234, 240, 0.82);
         border: none;
         margin-top: 0.5rem;
+        text-align: left;
     }
 
+    .fab-mobile {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    }
+    
+    .fab-mobile i {
+        color: white;
+    }
+
+}
+
+@media (min-width: 992px) {
+    .fab-mobile {
+        display: none !important;
+    }
 }
 
 /* Ajustes gerais de responsividade */
