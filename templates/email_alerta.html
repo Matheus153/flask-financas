@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+
+<body style="font-family: Arial, sans-serif; line-height: 1.6;">
+    <div style="max-width: 600px; margin: 20px auto; padding: 30px; border: 1px solid #e0e0e0;">
+
+        <h2 style="color: #2c3e50;">Alerta Financeiro</h2>
+
+        <p>Prezado(a) {{ nome }},</p>
+
+        <p>Nosso sistema identificou que seu saldo atual está abaixo de 10% do valor total de receitas deste mês:</p>
+
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>Resumo Financeiro:</strong></p>
+            <ul style="list-style: none; padding-left: 0;">
+                <li>📊 Saldo Atual: R$ {{ "%.2f"|format(saldo) }}</li>
+                <li>✅ Receitas Totais: R$ {{ "%.2f"|format(receitas) }}</li>
+                <li>❌ Despesas Totais: R$ {{ "%.2f"|format(despesas) }}</li>
+            </ul>
+        </div>
+
+        <p><strong>Recomendações:</strong></p>
+        <ul>
+            <li>Revise suas despesas recorrentes</li>
+            <li>Analise categorias com maior gasto</li>
+            <li>Considere ajustar seu orçamento</li>
+        </ul>
+
+        <p>Acesse sua conta para detalhes completos:</p>
+        <a href="{{ url_for('main.index', _external=True) }}"
+            style="display: inline-block; padding: 10px 20px; background: #3498db; color: white; text-decoration: none; border-radius: 5px;">
+            Ver Detalhes
+        </a>
+
+        <footer style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; color: #666;">
+            <p>Atenciosamente,<br>Equipe Insight Finance</p>
+            <small>Este é um e-mail automático, por favor não responda.</small>
+        </footer>
+    </div>
+</body>
+
+</html>
