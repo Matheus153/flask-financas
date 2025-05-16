@@ -60,6 +60,74 @@ def get_filtro_data():
     selected_year = request.args.get('ano', datetime.now().year, type=int)
     return selected_month, selected_year
 
+def verificar_saldos(app):
+    with app.app_context():
+        try:
+            # Buscar todos os usuários
+            users = firebase_auth.list_users().iterate_all()
+            
+            for user in users:
+                uid = user.uid
+                email = user.email
+                
+                # Calcular período do mês atual
+                hoje = datetime.now()
+                primeiro_dia_mes = hoje.replace(day=1, hour=0, minute=0, second=0)
+                
+                # Buscar transações do mês
+                transacoes = Transacao.query.filter(
+                    Transacao.user_id == uid,
+                    Transacao.data >= primeiro_dia_mes
+                ).all()
+                
+                # Calcular totais
+                receitas = sum(t.valor for t in transacoes if t.tipo == 'receita')
+                despesas = sum(t.valor for t in transacoes if t.tipo == 'despesa')
+                saldo = receitas - despesas
+                
+                # Verificar condição de alerta
+                if receitas > 0 and saldo < (receitas * 0.1):
+                    enviar_alerta(email, user.display_name, receitas, despesas, saldo)
+                    
+        except Exception as e:
+            print(f"Erro na verificação de saldos: {str(e)}")
+
+def enviar_alerta(destinatario, nome, receitas, despesas, saldo):
+    # Criar contexto manualmente
+    with current_app.app_context():
+        
+        msg = Message(
+            subject="Alerta Financeiro - Insight Finance",
+            sender=os.getenv('MAIL_USERNAME'),
+            recipients=[destinatario]
+        )
+        
+        msg.html = render_template(
+            'email_alerta.html',
+            nome=nome,
+            receitas=receitas,
+            despesas=despesas,
+            saldo=saldo,
+            data=datetime.now().strftime('%d/%m/%Y')
+        )
+        
+        try:
+            mail.send(msg)
+            print(f"Alerta enviado para {destinatario}")
+        except Exception as e:
+            print(f"Erro ao enviar alerta: {str(e)}")
+
+# Inicializar agendador
+scheduler = BackgroundScheduler()
+scheduler.add_job(
+    func=lambda: verificar_saldos(create_app()),
+    trigger='cron',
+    # day='last', (caso quisesse disparar no ultimo dia do mes)
+    hour=21,
+    minute=0
+)
+scheduler.start()
+
 def criar_transacao_recorrente():
     app = create_app()
 

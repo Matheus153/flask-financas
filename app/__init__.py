@@ -47,6 +47,16 @@ def create_app():
     app.config['WTF_CSRF_SECRET_KEY'] = os.getenv('CSRF_SECRET_KEY')
     app.secret_key = os.getenv('SECRET_KEY')
 
+    # Para usar nos links de direcionamentos de e-mail
+    app.config['SERVER_NAME'] = os.getenv('SERVER_NAME')
+    app.config['PREFERRED_URL_SCHEME'] = 'https'
+    app.config['APPLICATION_ROOT'] = '/'
+
+    # Caso queira usar em ambiente local desmarque o comentario abaixo
+    """ app.config['SERVER_NAME'] = 'localhost:5000'
+    app.config['PREFERRED_URL_SCHEME'] = 'http'
+    app.config['APPLICATION_ROOT'] = '/' """
+
     # Configurações de Email
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
     app.config['MAIL_PORT'] = 587
