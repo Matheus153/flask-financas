@@ -531,7 +531,11 @@ def recuperar_senha():
             sender=os.getenv('MAIL_USERNAME'),
             recipients=[email]
             )
-            msg.body = f"Olá, Recebemos uma solicitação para redefinir a senha da sua conta em nossa plataforma.\n\nPara continuar com a redefinição, clique no link abaixo ou copie e cole o endereço em seu navegador:\n\n{reset_link}\n\nApós concluir o processo, você poderá definir uma nova senha para acessar sua conta com segurança.\n\nSe você não solicitou esta alteração, por favor, ignore este e-mail. Sua conta continuará segura.\n\nAtenciosamente, Equipe Insight Finance!\n\nEste é um e-mail automático. Por favor, não responda diretamente a esta mensagem. Adicione nosso endereço aos seus contatos para garantir o recebimento de nossos comunicados."
+            msg.html = render_template(
+                'email_recuperacao_senha.html',
+                reset_link=reset_link,
+                data_solicitacao=datetime.now().strftime('%d/%m/%Y às %H:%M')
+            )
             mail.send(msg)
 
             flash('Email de recuperação enviado! Verifique sua caixa de entrada e a pasta spam', 'success')
