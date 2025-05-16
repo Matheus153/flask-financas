@@ -34,6 +34,8 @@ Portanto, ao clonar o projeto crie um arquivo chamado ".env" na raiz do projeto 
 ``` bash
   SECRET_KEY=chave_flask
   CSRF_SECRET_KEY=crie_sua_chave_propria
+  SERVER_NAME=url_da_sua_aplicacao_em_producao_ou_escreva_localhost
+  PREFERRED_URL_SCHEME=https_para_url_ou_http_para_localhost
   MAIL_USERNAME=seu_email
   MAIL_PASSWORD=senha_email
   API_KEY=chave_api_firebase
@@ -192,10 +194,14 @@ flask-financas/
 │   ├── base.html
 │   ├── cadastrar.html
 │   ├── editar.html
+│   ├── email_alerta.html
+│   ├── email_recuperacao_senha.html
 │   ├── index.html
 │   ├── login.html
+│   ├── perfil.html
 │   ├── recorrentes.html
 │   ├── recuperar_senha.html
+│   ├── redefinir_senha.html
 │   ├── resumo.html
 │   └── transacoes.html
 ├── static/
