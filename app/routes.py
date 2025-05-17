@@ -124,7 +124,7 @@ scheduler.add_job(
     trigger='cron',
     # day='last', (caso quisesse disparar no ultimo dia do mes)
     hour=21,
-    minute=0
+    minute=30
 )
 scheduler.start()
 
