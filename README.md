@@ -203,7 +203,8 @@ flask-financas/
 │   ├── recuperar_senha.html
 │   ├── redefinir_senha.html
 │   ├── resumo.html
-│   └── transacoes.html
+│   ├── transacoes.html
+│   └── tutorial.html
 ├── static/
 │   ├── images/
 │   │   └── favicon.ico
