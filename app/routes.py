@@ -328,6 +328,9 @@ def load_user(user_id):
         db_firestore = firestore.client()
         user_doc = db_firestore.collection('usuarios').document(user_id).get()
 
+         # Verifica custom claims para admin
+        is_admin = user_record.custom_claims.get('admin', False) if user_record.custom_claims else False
+
         user_data = user_doc.to_dict() if user_doc.exists else {}
         provider_data = user_record.provider_data[0] if user_record.provider_data else None
         
@@ -335,7 +338,7 @@ def load_user(user_id):
             uid=user_record.uid,
             email=user_record.email,
             name=user_data.get('full_name', user_record.display_name),
-            is_admin=user_data.get('admin', False),
+            is_admin=is_admin,
             provider=provider_data.provider_id.split('.')[0] if provider_data else 'password',
             primeiro_acesso=user_data.get('primeiro_acesso', True)
         )
