@@ -10,6 +10,7 @@ from flask_mail import Message
 from firebase_admin import auth as firebase_auth
 from firebase_admin import firestore, exceptions as firebase_exceptions
 from itsdangerous import URLSafeTimedSerializer
+from pytz import timezone
 import firebase_admin
 import plotly.express as px
 import pandas as pd
@@ -22,6 +23,8 @@ main_routes = Blueprint('main', __name__)
 
 # Configurar LoginManager
 login_manager.login_view = 'main.login'
+
+br_tz = timezone('America/Manaus')
 
 months = [
     (0, 'Todos os meses'),
@@ -118,13 +121,14 @@ def enviar_alerta(destinatario, nome, receitas, despesas, saldo):
             print(f"Erro ao enviar alerta: {str(e)}")
 
 # Inicializar agendador
-scheduler_alerta = BackgroundScheduler()
+scheduler_alerta = BackgroundScheduler(daemon=True)
 scheduler_alerta.add_job(
     func=lambda: verificar_saldos(create_app()),
     trigger='cron',
     # day='last', (caso quisesse disparar no ultimo dia do mes)
     hour=11,
-    minute=15
+    minute=30,
+    timezone=br_tz
 )
 scheduler_alerta.start()
 
