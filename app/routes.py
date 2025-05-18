@@ -117,17 +117,6 @@ def enviar_alerta(destinatario, nome, receitas, despesas, saldo):
         except Exception as e:
             print(f"Erro ao enviar alerta: {str(e)}")
 
-# Inicializar agendador
-scheduler = BackgroundScheduler()
-scheduler.add_job(
-    func=lambda: verificar_saldos(create_app()),
-    trigger='cron',
-    # day='last', (caso quisesse disparar no ultimo dia do mes)
-    hour=9,
-    minute=0
-)
-scheduler.start()
-
 def criar_transacao_recorrente():
     app = create_app()
 
@@ -170,10 +159,30 @@ def criar_transacao_recorrente():
         
         db.session.commit()
 
-# Agendador que roda diariamente às 00:01
-scheduler = BackgroundScheduler()
-scheduler.add_job(func=criar_transacao_recorrente, trigger='cron', hour=0, minute=5)
-scheduler.start()
+def start_schedulers(app):
+    """Inicia todos os schedulers usando o contexto da aplicação"""
+    with app.app_context():
+        # Agendador de verificação de saldos
+        saldos_scheduler = BackgroundScheduler()
+        saldos_scheduler.add_job(
+            func=verificar_saldos,
+            trigger='cron',
+            hour=11,
+            minute=0
+        )
+        
+        # Agendador de transações recorrentes
+        transacoes_scheduler = BackgroundScheduler()
+        transacoes_scheduler.add_job(
+            func=criar_transacao_recorrente,
+            trigger='cron',
+            hour=0,
+            minute=5
+        )
+        
+        # Iniciar schedulers
+        saldos_scheduler.start()
+        transacoes_scheduler.start()
 
 # Função para promover usuário a admin
 def make_admin(uid):

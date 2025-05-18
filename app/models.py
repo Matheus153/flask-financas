@@ -25,8 +25,6 @@ class Transacao(db.Model):
     tipo = db.Column(db.String(10), nullable=False)
     categoria_id = db.Column(db.Integer, db.ForeignKey('categoria.id'), nullable=False)
     user_id = db.Column(db.String(128), nullable=False)  # Firebase UID do usuário
-
-    # Novos campos para recorrência
     recorrente = db.Column(db.Boolean, default=False)
     meses_repeticao = db.Column(db.Integer, default=0)  # Contador de repetições
     data_original = db.Column(db.DateTime)  # Data da primeira ocorrência
