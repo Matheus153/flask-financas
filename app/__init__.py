@@ -96,4 +96,9 @@ def create_app():
         from app.routes import main_routes
         app.register_blueprint(main_routes)
 
+     # Iniciar schedulers apenas no processo designado
+    if os.environ.get('FLASK_RUN_SCHEDULER') == '1':
+        from app.routes import start_schedulers
+        start_schedulers(app)
+
     return app
