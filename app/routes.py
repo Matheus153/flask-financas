@@ -123,8 +123,8 @@ scheduler.add_job(
     func=lambda: verificar_saldos(create_app()),
     trigger='cron',
     # day='last', (caso quisesse disparar no ultimo dia do mes)
-    hour=21,
-    minute=30
+    hour=9,
+    minute=0
 )
 scheduler.start()
 
@@ -345,6 +345,11 @@ def login():
         try:
             # Verificar se já existe conta com este e-mail
             user_record = firebase_auth.get_user_by_email(email)
+
+            # Se existir e for provedor social
+            """ if any(provider.provider_id != 'password' for provider in user_record.provider_data):
+                flash('Este e-mail está associado a um login social', 'warning')
+                return redirect(url_for('main.login')) """
             
             # Verificar se existe provedor password
             if not any(p.provider_id == 'password' for p in user_record.provider_data):
