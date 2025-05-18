@@ -506,6 +506,10 @@ def cadastrar():
         password = request.form['password']
 
         errors = validar_senha(password)
+
+        if 'aceitar_termos' not in request.form:
+            flash('Você deve aceitar os termos e condições para se cadastrar', 'danger')
+            return redirect(url_for('main.cadastrar'))
         
         if errors:
             for error in errors:
@@ -544,6 +548,16 @@ def cadastrar():
             return redirect(url_for('main.cadastrar'))
     
     return render_template('cadastrar.html')
+
+@main_routes.route('/termos-de-uso')
+def termos_condicoes():
+    return render_template('termos_condicoes.html', 
+                         data_atual=datetime.now().strftime('%d/%m/%Y'))
+
+@main_routes.route('/politica-de-privacidade')
+def politica_privacidade():
+    return render_template('politica_privacidade.html',
+                         data_atual=datetime.now().strftime('%d/%m/%Y'))
 
 # Modifique a rota de recuperação de senha
 @main_routes.route('/recuperar-senha', methods=['GET', 'POST'])
@@ -803,6 +817,34 @@ def editar_transacao(id):
                          transacao=transacao, 
                          categorias=categorias)
 
+def excluir_conta_usuario(user_id):
+    try:
+        db_firestore = firestore.client()
+        
+        # 1. Excluir dados do Firestore
+        user_ref = db_firestore.collection('usuarios').document(user_id)
+        user_ref.delete()
+
+        # 2. Excluir transações relacionadas no SQL
+        Transacao.query.filter_by(user_id=user_id).delete()
+        db.session.commit()
+
+        # 3. Excluir usuário do Firebase Auth
+        firebase_auth.delete_user(user_id)
+
+        # 4. Logout e redirecionamento
+        logout_user()
+        flash('Sua conta e todos os dados foram excluídos com sucesso', 'success')
+        return redirect(url_for('main.login'))
+
+    except firebase_auth.UserNotFoundError:
+        flash('Usuário já não existe', 'warning')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao excluir conta: {str(e)}', 'danger')
+    
+    return redirect(url_for('main.perfil'))
+
 @main_routes.route('/perfil', methods=['GET', 'POST'])
 @login_required
 def perfil():
@@ -814,6 +856,10 @@ def perfil():
         if request.method == 'POST':
             csrf.protect()
             
+            # Verificar se é exclusão de conta
+            if 'delete_account' in request.form:
+                return excluir_conta_usuario(current_user.id)
+
             novo_nome = request.form['nome'].strip()
             if not novo_nome:
                 flash('O nome não pode estar vazio', 'danger')
@@ -845,6 +891,7 @@ def perfil():
     except Exception as e:
         flash(f'Erro ao atualizar perfil: {str(e)}', 'danger')
         return redirect(url_for('main.perfil'))
+    
 
 @main_routes.route('/excluir/<int:id>')
 @login_required
