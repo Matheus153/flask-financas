@@ -175,8 +175,13 @@ def criar_transacao_recorrente():
         db.session.commit()
 
 # Agendador que roda diariamente às 00:01
-scheduler_recorrentes = BackgroundScheduler()
-scheduler_recorrentes.add_job(func=criar_transacao_recorrente, trigger='cron', hour=0, minute=5)
+scheduler_recorrentes = BackgroundScheduler(daemon=True)
+scheduler_recorrentes.add_job(
+    func=criar_transacao_recorrente, 
+    trigger='cron', 
+    hour=0,
+    minute=5, 
+    timezone=br_tz)
 scheduler_recorrentes.start()
 
 # Função para promover usuário a admin
