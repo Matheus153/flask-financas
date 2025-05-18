@@ -199,10 +199,12 @@ flask-financas/
 │   ├── index.html
 │   ├── login.html
 │   ├── perfil.html
+│   ├── politica_privacidade.html
 │   ├── recorrentes.html
 │   ├── recuperar_senha.html
 │   ├── redefinir_senha.html
 │   ├── resumo.html
+│   ├── termos_condicoes.html
 │   ├── transacoes.html
 │   └── tutorial.html
 ├── static/
