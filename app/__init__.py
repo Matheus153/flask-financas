@@ -48,8 +48,8 @@ def create_app():
     app.secret_key = os.getenv('SECRET_KEY')
 
     # Para usar nos links de direcionamentos de e-mail
-    app.config['SERVER_NAME'] = 'localhost' # Substitua por 'localhost' caso queira rodar localmente
-    app.config['PREFERRED_URL_SCHEME'] = 'http' # Substitua por 'http' caso queira rodar localmente
+    app.config['SERVER_NAME'] = os.getenv('SERVER_NAME') # Substitua por 'localhost' caso queira rodar localmente
+    app.config['PREFERRED_URL_SCHEME'] = os.getenv('PREFERRED_URL_SCHEME') # Substitua por 'http' caso queira rodar localmente
     app.config['APPLICATION_ROOT'] = '/'
 
     # Caso queira usar em ambiente local desmarque o comentario abaixo
