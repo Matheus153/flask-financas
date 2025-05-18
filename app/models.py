@@ -3,12 +3,13 @@ from flask_login import UserMixin
 from datetime import datetime
 
 class User(UserMixin):
-    def __init__(self, uid, email, name, is_admin=False, provider=None):
+    def __init__(self, uid, email, name, is_admin=False, provider=None, primeiro_acesso=True):
         self.id = uid
         self.email = email
         self.name = name  # Novo campo
         self.is_admin = is_admin
         self.provider = provider  # 'google', 'github', etc
+        self.primeiro_acesso = primeiro_acesso
 
 class Categoria(db.Model):
     id = db.Column(db.Integer, primary_key=True)

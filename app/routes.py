@@ -316,32 +316,24 @@ def index():
 def load_user(user_id):
     try:
         user_record = firebase_auth.get_user(user_id)
-
-        # Determina o provedor
-        # provider = 'email'
-
-        if user_record.provider_data:
-            provider = user_record.provider_data[0].provider_id.split('.')[0] if user_record.provider_data else 'password'
-
-         # Verifica custom claims para admin
-        is_admin = user_record.custom_claims.get('admin', False) if user_record.custom_claims else False
-
-        # Busca dados no Firestore
         db_firestore = firestore.client()
         user_doc = db_firestore.collection('usuarios').document(user_id).get()
+
+        user_data = user_doc.to_dict() if user_doc.exists else {}
+        provider_data = user_record.provider_data[0] if user_record.provider_data else None
         
         return User(
-            uid=user_record.uid, 
+            uid=user_record.uid,
             email=user_record.email,
-            name=user_doc.get('full_name') if user_doc.exists else user_record.display_name, 
-            is_admin=is_admin,
-            provider=provider
+            name=user_data.get('full_name', user_record.display_name),
+            is_admin=user_data.get('admin', False),
+            provider=provider_data.provider_id.split('.')[0] if provider_data else 'password',
+            primeiro_acesso=user_data.get('primeiro_acesso', True)
         )
-    
+
     except Exception as e:
         print(f"Erro ao carregar usuário: {str(e)}")
         return None
-
 
 @main_routes.route('/login', methods=['GET', 'POST'])
 def login():
@@ -354,9 +346,11 @@ def login():
             # Verificar se já existe conta com este e-mail
             user_record = firebase_auth.get_user_by_email(email)
             
-            # Se existir e for provedor social
-            if any(provider.provider_id != 'password' for provider in user_record.provider_data):
-                flash('Este e-mail está associado a um login social', 'warning')
+            # Verificar se existe provedor password
+            if not any(p.provider_id == 'password' for p in user_record.provider_data):
+                providers = [p.provider_id.split('.')[0] for p in user_record.provider_data]
+                flash(f'Este e-mail está associado a um login social. Use login social com: {", ".join(providers)} ou redefina sua senha', 'warning')
+                
                 return redirect(url_for('main.login'))
                 
         except firebase_auth.UserNotFoundError:
@@ -384,6 +378,9 @@ def login():
                 user_id = decoded_token['uid']
                 user = load_user(user_id)
                 login_user(user)
+
+                if user.primeiro_acesso:
+                    return redirect(url_for('main.tutorial'))
 
                 # Lógica de primeiro admin
                 if configurar_primeiro_admin(user_id):
@@ -430,29 +427,54 @@ def login_social():
         db_firestore = firestore.client()
         user_ref = db_firestore.collection('usuarios').document(user_id)
         
-        # Verificar se o usuário já existe
+        # Criar/Atualizar usuário
+        user_data = {
+            'email': decoded_token.get('email'),
+            'full_name': decoded_token.get('name', 'Usuário'),
+            'last_login': firestore.SERVER_TIMESTAMP,
+            'provider': decoded_token.get('firebase', {}).get('sign_in_provider')
+        }
+
         if not user_ref.get().exists:
-            # Criar novo documento com dados do provedor social
-            user_data = {
+            user_data.update({
                 'created_at': firestore.SERVER_TIMESTAMP,
-                'email': decoded_token.get('email'),
-                'full_name': decoded_token.get('name') or 'Usuário',
-                'provider': decoded_token.get('firebase', {}).get('sign_in_provider'),
-                'admin': False
-            }
+                'admin': False,
+                'primeiro_acesso': True
+            })
             user_ref.set(user_data)
-        
-            # Verifica se é o primeiro usuário
+            
             if configurar_primeiro_admin(user_id):
                 user_ref.update({'admin': True})
-        
-        # Carregar e logar usuário
+        else:
+            user_ref.update(user_data)
+
         user = load_user(user_id)
         login_user(user)
         
-        return jsonify({'success': True}), 200
+        return jsonify({
+            'redirect': url_for('main.tutorial') if user.primeiro_acesso else url_for('main.index')
+        })
+
     except Exception as e:
         return jsonify({'error': str(e)}), 401
+    
+
+@main_routes.route('/tutorial', methods=['GET', 'POST'])
+@login_required
+def tutorial():
+    if request.method == 'POST':
+        try:
+            db_firestore = firestore.client()
+            db_firestore.collection('usuarios').document(current_user.id).update({
+                'primeiro_acesso': False,
+                'tutorial_completo_em': firestore.SERVER_TIMESTAMP
+            })
+            return redirect(url_for('main.index'))
+        
+        except Exception as e:
+            flash(f'Erro ao salvar progresso: {str(e)}', 'danger')
+    
+    return render_template('tutorial.html')
 
 @main_routes.route('/logout')
 @login_required

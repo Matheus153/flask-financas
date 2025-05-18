@@ -128,6 +128,50 @@ body {
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
+/* Onboarding  tutorial */
+.onboarding-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+}
+
+.onboarding-step {
+    display: none;
+    text-align: center;
+    padding: 2rem;
+}
+
+.onboarding-step.active {
+    display: block;
+    animation: fadeIn 0.5s ease;
+}
+
+.tutorial-gif {
+    display: block; /* Alterado para block */
+    width: 100%; /* Alterado para largura responsiva */
+    max-width: 600px; /* Tamanho máximo mantido */
+    height: auto; /* Altura automática */
+    margin: 1rem auto; /* Centralização horizontal */
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    object-fit: contain; /* Garante proporção correta */
+}
+
+.step-controls {
+    margin-top: 2rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 /* Floating Action Button */
 .fab-mobile {
     position: fixed;

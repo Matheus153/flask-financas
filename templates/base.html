@@ -111,6 +111,51 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const steps = document.querySelectorAll('.onboarding-step');
+            let currentStep = 0;
+
+            function showStep(stepIndex) {
+                steps.forEach((step, index) => {
+                    step.classList.toggle('active', index === stepIndex);
+                });
+            }
+
+            document.querySelectorAll('.next-step').forEach(button => {
+                button.addEventListener('click', () => {
+                    if (currentStep < steps.length - 1) {
+                        currentStep++;
+                        showStep(currentStep);
+                    }
+                });
+            });
+
+            document.querySelectorAll('.prev-step').forEach(button => {
+                button.addEventListener('click', () => {
+                    if (currentStep > 0) {
+                        currentStep--;
+                        showStep(currentStep);
+                    }
+                });
+            });
+
+            document.querySelector('.finish-tutorial').addEventListener('click', async () => {
+                try {
+                    await fetch('/tutorial', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': document.querySelector('[name=csrf_token]').value
+                        }
+                    });
+                    window.location.href = '/';
+                } catch (error) {
+                    console.error('Erro:', error);
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>

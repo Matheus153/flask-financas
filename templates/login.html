@@ -74,7 +74,8 @@
             });
 
             if (response.ok) {
-                window.location.href = "{{ url_for('main.index') }}";
+                const data = await response.json();
+                window.location.href = data.redirect;
             } else {
                 const error = await response.json();
                 showToast(error.message || 'Erro no login');
