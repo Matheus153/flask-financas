@@ -124,7 +124,7 @@ scheduler_alerta.add_job(
     trigger='cron',
     # day='last', (caso quisesse disparar no ultimo dia do mes)
     hour=11,
-    minute=5
+    minute=15
 )
 scheduler_alerta.start()
 
