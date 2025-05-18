@@ -73,6 +73,20 @@ body {
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
+/* Ajustes gerais de responsividade */
+.container {
+    padding-top: 40px; /* Compensa navbar fixa */
+}
+
+.table-responsive-md {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.grafico-responsive {
+    min-width: 300px; /* Largura mínima para gráficos */
+}
+
 .text-success {
     font-weight: 500;
 }
@@ -302,16 +316,3 @@ body {
     }
 }
 
-/* Ajustes gerais de responsividade */
-.container {
-    padding-top: 40px; /* Compensa navbar fixa */
-}
-
-.table-responsive-md {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-.grafico-responsive {
-    min-width: 300px; /* Largura mínima para gráficos */
-}

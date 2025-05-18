@@ -17,7 +17,7 @@
 
     <div class="mb-3">
         <label>Senha</label>
-        <input type="password" name="password" maxlength="100" class="form-control" required>
+        <input type="password" name="password" maxlength="100" class="form-control mb-3" required>
         <small class="form-text text-muted">
             Requisitos:
             <ul>
@@ -29,7 +29,17 @@
         </small>
     </div>
 
+    <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="aceitarTermos" name="aceitar_termos" required>
+        <label class="form-check-label" for="aceitarTermos">
+            Li e aceito os <a class="link-blue" href="{{ url_for('main.termos_condicoes') }}" target="_blank">Termos de
+                Uso</a> e
+            <a class="link-blue" href="{{ url_for('main.politica_privacidade') }}" target="_blank">Política de
+                Privacidade</a>
+        </label>
+    </div>
+
     <button type="submit" class="btn btn-primary">Cadastrar</button>
-    <a class="link-blue" href="{{ url_for('main.login') }}" class="btn btn-link">Já tem conta? Faça login</a>
+    <a class="btn btn-link link-blue" href="{{ url_for('main.login') }}" class="">Já tem conta? Faça login</a>
 </form>
 {% endblock %}
