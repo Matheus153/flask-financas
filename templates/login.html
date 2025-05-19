@@ -1,43 +1,128 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2 class="mb-4">Acesse sua conta</h2>
-<form method="POST" action="{{ url_for('main.login') }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="mb-3">
-        <label>Email</label>
-        <input type="email" name="email" class="form-control" maxlength="100" required>
+<div class="hero-section bg-primary-gradient">
+    <div class="container">
+        <div class="row align-items-center">
+            <!-- Coluna de Apresentação -->
+            <div class="col-lg-6 mb-5 mb-lg-0 text-white">
+                <h1 class="display-4 mb-4">Bem-vindo a Insight Finance</h1>
+
+                <!-- Seção Para quem é -->
+                <div class="mb-5">
+                    <div class="d-flex align-items-center mb-4">
+                        <i class="fas fa-users me-3 fs-2"></i>
+                        <h3>Para que uso:</h3>
+                    </div>
+                    <ul class="list-unstyled">
+                        <li class="mb-3">✅ Controle financeiro pessoal simplificado</li>
+                        <li class="mb-3">✅ Gestão para pequenos negócios</li>
+                        <li class="mb-3">✅ Ferramenta para equipes financeiras</li>
+                    </ul>
+                </div>
+
+                <!-- Seção Funcionalidades -->
+                <div class="mb-0">
+                    <div class="d-flex align-items-center mb-4">
+                        <h3>Principais Recursos</h3>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="card bg-dark">
+                                <div class="card-body">
+                                    <h5><i class="fas fa-chart-pie me-2"></i>Dashboard</h5>
+                                    <p class="text-muted mb-0">Visualização completa das finanças</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-dark">
+                                <div class="card-body">
+                                    <h5><i class="fas fa-bell me-2"></i>Alertas</h5>
+                                    <p class="text-muted mb-0">Notificações inteligentes ao ultrapassar metas</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção Como Acessar -->
+                <div class="mb-3">
+                    <div class="d-flex align-items-center mb-3">
+                        <h3>Como Acessar?</h3>
+                    </div>
+
+                    <div class="card bg-dark">
+                        <div class="card-body">
+                            <ol class="text-muted mb-0">
+                                <li>Cadastre seu e-mail ou faça login social</li>
+                                <li>Acesse seu painel finanças</li>
+                                <li>Adicione transações</li>
+                                <li>Gerencie sua finanças</li>
+                                <li>Defina metas e controle seus gastos</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna de Login -->
+            <div class="col-lg-6">
+                <div class="auth-card bg-white p-4 rounded-3 shadow">
+                    <h2 class="text-center mb-4 mt-2">Acesse sua conta</h2>
+
+                    <form method="POST" action="{{ url_for('main.login') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control" maxlength="100" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Senha</label>
+                            <input type="password" name="password" class="form-control" maxlength="100" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 mb-3">Entrar</button>
+
+                        <div class="text-center">
+                            <a class="link-blue" href="{{ url_for('main.recuperar_senha') }}">
+                                Esqueci minha senha
+                            </a>
+                        </div>
+                    </form>
+
+                    <!-- Divisor social -->
+                    <div class="position-relative my-4">
+                        <hr>
+                        <div class="position-absolute top-50 start-50 translate-middle bg-white px-3">ou</div>
+                    </div>
+
+                    <div class="social-login text-center">
+                        <button onclick="loginWithGoogle()" class="btn btn-danger mb-2 w-100">
+                            <i class="fab fa-google"></i> Continuar com Google
+                        </button>
+
+                        <button onclick="loginWithGithub()" class="btn btn-dark mb-2 w-100">
+                            <i class="fab fa-github"></i> Continuar com GitHub
+                        </button>
+                    </div>
+
+                    <div class="d-flex justify-content-center">
+                        <div class="subscribe text-center mt-4">
+                            <p class="mb-0">Não tem uma conta?
+                                <a class="link-blue" href="{{ url_for('main.cadastrar') }}">
+                                    Cadastre-se gratuitamente
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="mb-3">
-        <label>Senha</label>
-        <input type="password" name="password" class="form-control" maxlength="100" required>
-    </div>
-    <button type="submit" class="btn btn-primary">Entrar</button>
-    <div class="mt-3 mb-3">
-        <a class="link-blue" href="{{ url_for('main.recuperar_senha') }}">Esqueci minha senha</a>
-    </div>
-
-</form>
-
-<!-- Divisor social -->
-<div class="position-relative my-4">
-    <hr>
-    <div class="position-absolute top-50 start-50 translate-middle bg-white px-3">ou</div>
-</div>
-
-<div class="social-login mt-4">
-    <button onclick="loginWithGoogle()" class="btn btn-danger mb-2">
-        Entrar com <i class="fab fa-google" title="logo google"></i>
-    </button>
-
-    <button onclick="loginWithGithub()" class="btn btn-dark mb-2">
-        Entrar com <i class="fab fa-github" title="logo github"></i>
-    </button>
-</div>
-
-<div class="subscribe">
-    <label>Não tem uma conta?</label>
-    <a class="link-blue" href="{{ url_for('main.cadastrar') }}">Se inscreva gratuitamente</a>
 </div>
 
 <!-- Firebase SDK -->

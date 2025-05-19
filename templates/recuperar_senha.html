@@ -1,18 +1,20 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2 class="mb-4">Recuperar Senha</h2>
-<form method="POST">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="mb-4">
-        <label>Email cadastrado</label>
-        <input type="email" name="email" class="form-control" maxlength="100" required>
-    </div>
-    <button type="submit" class="btn btn-primary">Enviar Link de Recuperação</button>
-    <div class="mt-4">
-        <a class=" link-blue" href="{{ url_for('main.login') }}" class="btn btn-link">
-            <i class="bi bi-box-arrow-right me-2"></i>Retornar ao login</a>
-    </div>
+<div class="p-2">
+    <h2 class="mb-4">Recuperar Senha</h2>
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-4">
+            <label>Email cadastrado</label>
+            <input type="email" name="email" class="form-control" maxlength="100" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Enviar Link de Recuperação</button>
+        <div class="mt-4">
+            <a class=" link-blue" href="{{ url_for('main.login') }}" class="btn btn-link">
+                <i class="bi bi-box-arrow-right me-2"></i>Retornar ao login</a>
+        </div>
 
-</form>
+    </form>
+</div>
 {% endblock %}

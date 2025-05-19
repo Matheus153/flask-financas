@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>Gerenciamento de Usuários</h2>
+<div class="p-2">
+    <h2>Gerenciamento de Usuários</h2>
+</div>
 
 <div class="table-responsive-md">
     <table class="table table-striped table-hover">
@@ -20,7 +22,7 @@
                 <td class="text-muted small">{{ user.uid }}</td>
                 <td>
                     {% if user.custom_claims and user.custom_claims.get('admin') %}
-                    <span class="badge bg-success">Admin</span>
+                    <span class="badge bg-primary bg-gradient">Admin</span>
                     {% else %}
                     <span class="badge bg-secondary">Usuário</span>
                     {% endif %}
@@ -28,12 +30,14 @@
                 <td>
 
                     {% if user.custom_claims and user.custom_claims.get('admin') %}
-                    <a href="{{ url_for('main.remover_admin', uid=user.uid) }}" class="btn btn-sm btn-danger"
+                    <a href="{{ url_for('main.remover_admin', uid=user.uid) }}"
+                        class="btn btn-sm btn-danger bg-gradient"
                         onclick="return confirm('Remover privilégios de admin deste usuário?')">
-                        Remover Admin
+                        Remove Admin
                     </a>
                     {% else %}
-                    <a href="{{ url_for('main.promover_admin', uid=user.uid) }}" class="btn btn-sm btn-warning"
+                    <a href="{{ url_for('main.promover_admin', uid=user.uid) }}"
+                        class="btn btn-sm btn-success bg-gradient"
                         onclick="return confirm('Tornar este usuário administrador?')">
                         Tornar Admin
                     </a>
