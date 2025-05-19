@@ -766,7 +766,7 @@ def adicionar_transacao():
         flash('Transação adicionada com sucesso!', 'success')
         return redirect(url_for('.index'))
     
-    return render_template('adicionar.html', categorias=categorias, datetime=datetime)
+    return render_template('adicionar.html', categorias=categorias, datetime=datetime, br_tz=br_tz)
 
 
 

@@ -35,7 +35,7 @@
     <div class="mb-3">
         <label for="data" class="form-label">Data</label>
         <input type="datetime-local" class="form-control" id="data" name="data" required
-            value="{{ datetime.now().strftime('%Y-%m-%dT%H:%M') }}">
+            value="{{ datetime.now(br_tz).strftime('%Y-%m-%dT%H:%M') }}">
     </div>
     <div class="mb-3 form-check">
         <input type="checkbox" class="form-check-input" id="recorrente" name="recorrente">
