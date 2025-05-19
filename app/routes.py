@@ -24,7 +24,7 @@ main_routes = Blueprint('main', __name__)
 # Configurar LoginManager
 login_manager.login_view = 'main.login'
 
-br_tz = timezone('America/Manaus')
+br_tz = timezone('America/Sao_Paulo')
 
 months = [
     (0, 'Todos os meses'),
@@ -42,7 +42,7 @@ months = [
     (12, 'Dezembro')
 ]
 
-years = [(0, 'Todos os anos')] + [(year, year) for year in range(2020, datetime.now().year + 2)]
+years = [(0, 'Todos os anos')] + [(year, year) for year in range(2020, datetime.now(br_tz).year + 2)]
 
 # Função de validação de senha reutilizável
 def validar_senha(password):
@@ -59,8 +59,8 @@ def validar_senha(password):
 
 # Função auxiliar para obter parâmetros de data
 def get_filtro_data():
-    selected_month = request.args.get('mes', datetime.now().month, type=int)
-    selected_year = request.args.get('ano', datetime.now().year, type=int)
+    selected_month = request.args.get('mes', datetime.now(br_tz).month, type=int)
+    selected_year = request.args.get('ano', datetime.now(br_tz).year, type=int)
     return selected_month, selected_year
 
 def verificar_saldos(app):
@@ -74,7 +74,7 @@ def verificar_saldos(app):
                 email = user.email
                 
                 # Calcular período do mês atual
-                hoje = datetime.now()
+                hoje = datetime.now(br_tz)
                 primeiro_dia_mes = hoje.replace(day=1, hour=0, minute=0, second=0)
                 
                 # Buscar transações do mês
@@ -111,7 +111,7 @@ def enviar_alerta(destinatario, nome, receitas, despesas, saldo):
             receitas=receitas,
             despesas=despesas,
             saldo=saldo,
-            data=datetime.now().strftime('%d/%m/%Y')
+            data=datetime.now(br_tz).strftime('%d/%m/%Y')
         )
         
         try:
@@ -126,8 +126,8 @@ scheduler_alerta.add_job(
     func=lambda: verificar_saldos(create_app()),
     trigger='cron',
     # day='last', (caso quisesse disparar no ultimo dia do mes)
-    hour=11,
-    minute=30,
+    hour=9,
+    minute=0,
     timezone=br_tz
 )
 scheduler_alerta.start()
@@ -142,7 +142,7 @@ def criar_transacao_recorrente():
         firebase_admin.initialize_app(cred)
 
     with app.app_context():
-        agora = datetime.now()
+        agora = datetime.now(br_tz)
         
         # Busca transações recorrentes que ainda não completaram 12 meses
         transacoes = Transacao.query.filter(
@@ -555,12 +555,12 @@ def cadastrar():
 @main_routes.route('/termos-de-uso')
 def termos_condicoes():
     return render_template('termos_condicoes.html', 
-                         data_atual=datetime.now().strftime('%d/%m/%Y'))
+                         data_atual=datetime.now(br_tz).strftime('%d/%m/%Y'))
 
 @main_routes.route('/politica-de-privacidade')
 def politica_privacidade():
     return render_template('politica_privacidade.html',
-                         data_atual=datetime.now().strftime('%d/%m/%Y'))
+                         data_atual=datetime.now(br_tz).strftime('%d/%m/%Y'))
 
 # Modifique a rota de recuperação de senha
 @main_routes.route('/recuperar-senha', methods=['GET', 'POST'])
@@ -587,7 +587,7 @@ def recuperar_senha():
             msg.html = render_template(
                 'email_recuperacao_senha.html',
                 reset_link=reset_link,
-                data_solicitacao=datetime.now().strftime('%d/%m/%Y às %H:%M')
+                data_solicitacao=datetime.now(br_tz).strftime('%d/%m/%Y às %H:%M')
             )
             mail.send(msg)
 
@@ -1054,7 +1054,7 @@ def resumo():
         transacoes_recentes=transacoes_recentes,
         usuarios=usuarios,
         user_id_filtro=user_id_filtro,
-        data_atual=datetime.now().strftime('%Y-%m-%d'),
+        data_atual=datetime.now(br_tz).strftime('%Y-%m-%d'),
         firebase_auth=firebase_auth,
         graficos=graficos,
         selected_month=selected_month,
