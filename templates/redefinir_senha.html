@@ -1,30 +1,33 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2 class="mb-4">Redefinir Senha</h2>
-<form method="POST">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="form-group">
-        <div class="mb-3">
-            <label for="password">Nova Senha</label>
-            <input type="password" class="form-control" id="password" name="password" required>
-        </div>
+<div class="p-2">
+    <h2 class="mb-4">Redefinir Senha</h2>
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+            <div class="mb-3">
+                <label for="password">Nova Senha</label>
+                <input type="password" class="form-control" id="password" name="password" required>
+            </div>
 
-        <div class="mb-3">
-            <label for="confirm_password">Confirme a Nova Senha</label>
-            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
-        </div>
+            <div class="mb-3">
+                <label for="confirm_password">Confirme a Nova Senha</label>
+                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+            </div>
 
-        <small class="form-text text-muted mb-4">
-            Requisitos:
-            <ul>
-                <li>Mínimo 6 caracteres</li>
-                <li>Pelo menos uma letra maiúscula</li>
-                <li>Pelo menos um caractere especial</li>
-                <li>Pelo menos um número</li>
-            </ul>
-        </small>
+            <small class="form-text text-muted mb-4">
+                Requisitos:
+                <ul>
+                    <li>Mínimo 6 caracteres</li>
+                    <li>Pelo menos uma letra maiúscula</li>
+                    <li>Pelo menos um caractere especial</li>
+                    <li>Pelo menos um número</li>
+                </ul>
+            </small>
 
-        <button type="submit" class="btn btn-primary">Redefinir Senha</button>
-</form>
+            <button type="submit" class="btn btn-primary">Redefinir Senha</button>
+    </form>
+</div>
+
 {% endblock %}

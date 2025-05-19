@@ -1,29 +1,30 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="p-2">
+    <h2>Transações Recorrentes</h2>
 
-<h2>Transações Recorrentes</h2>
-
-{% if current_user.is_admin %}
-<div class="mb-4">
-    <form method="get" class="row g-3 mt-2">
-        <div class="col-md-6">
-            <select name="user_id" class="form-select">
-                <option value="">Todos os usuários</option>
-                {% for usuario in usuarios %}
-                <option value="{{ usuario.uid }}" {% if user_id_filtro==usuario.uid %}selected{% endif %}>
-                    {{ usuario.email }} ({{ usuario.uid[:8] }}...)
-                </option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-md-2">
-            <button type="submit" class="btn btn-primary">Filtrar</button>
-            <a href="{{ url_for('main.transacoes_recorrentes') }}" class="btn btn-outline-secondary">Limpar</a>
-        </div>
-    </form>
+    {% if current_user.is_admin %}
+    <div class="mb-4">
+        <form method="get" class="row g-3 mt-2">
+            <div class="col-md-6">
+                <select name="user_id" class="form-select">
+                    <option value="">Todos os usuários</option>
+                    {% for usuario in usuarios %}
+                    <option value="{{ usuario.uid }}" {% if user_id_filtro==usuario.uid %}selected{% endif %}>
+                        {{ usuario.email }} ({{ usuario.uid[:8] }}...)
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+                <a href="{{ url_for('main.transacoes_recorrentes') }}" class="btn btn-outline-secondary">Limpar</a>
+            </div>
+        </form>
+    </div>
+    {% endif %}
 </div>
-{% endif %}
 
 <div class="table-responsive-md">
     <table class="table table-striped table-hover">
