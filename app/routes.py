@@ -961,16 +961,10 @@ def resumo():
             .all()
         ) """
 
-        transacoes_todas = (
-            base_query
-            .order_by(Transacao.data.desc())
-            .all()
-        )
-        
         transacoes_recentes = (
             base_query
             .order_by(Transacao.data.desc())
-            .limit(8)
+            .limit(6)
             .all()
         )
 
@@ -980,7 +974,7 @@ def resumo():
             'Valor': t.valor,
             'Tipo': t.tipo,
             'Data': t.data
-        } for t in transacoes_todas])
+        } for t in transacoes_recentes])
 
         # Gráfico 1: Despesas por Categoria
         if not df.empty and 'despesa' in df['Tipo'].values:
