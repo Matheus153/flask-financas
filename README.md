@@ -1,7 +1,7 @@
 
 # Flask Finances
 
-Um sistema que realiza seu controle financeiro através de acompanhamentos semanais e mensais dos seus lançamentos, aponta melhorias que poderiam ser realizadas e gera gráficos automaticamente com suas informações.
+Um sistema que realiza seu controle financeiro através de acompanhamentos diários e mensais dos seus lançamentos, aponta melhorias que poderiam ser realizadas e gera gráficos automaticamente com suas informações.
 
 # Pré-requisitos
 
@@ -32,7 +32,7 @@ Para que o app funcione corretamente é necessário que existam variáveis de am
 Portanto, ao clonar o projeto crie um arquivo chamado ".env" na raiz do projeto e preenchar com os seguintes dados:
 
 ``` bash
-  SECRET_KEY=chave_flask
+  SECRET_KEY=chave_flask_pode_adicionar_a_que_quiser
   CSRF_SECRET_KEY=crie_sua_chave_propria
   SERVER_NAME=url_da_sua_aplicacao_em_producao_ou_escreva_localhost
   PREFERRED_URL_SCHEME=https_para_url_ou_http_para_localhost
