@@ -26,22 +26,96 @@
                     {% else %}
                     <span class="badge bg-secondary">Usuário</span>
                     {% endif %}
+
+                    {% if user.disabled %}
+                    <span class="badge bg-warning">Desativado</span>
+                    {% else %}
+                    <span class="badge bg-success">Ativo</span>
+                    {% endif %}
                 </td>
                 <td>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                            data-bs-toggle="dropdown">
+                            Ações
+                        </button>
 
-                    {% if user.custom_claims and user.custom_claims.get('admin') %}
-                    <a href="{{ url_for('main.remover_admin', uid=user.uid) }}"
-                        class="btn btn-sm btn-danger bg-gradient"
-                        onclick="return confirm('Remover privilégios de admin deste usuário?')">
-                        Remove Admin
-                    </a>
-                    {% else %}
-                    <a href="{{ url_for('main.promover_admin', uid=user.uid) }}"
-                        class="btn btn-sm btn-success bg-gradient"
-                        onclick="return confirm('Tornar este usuário administrador?')">
-                        Tornar Admin
-                    </a>
-                    {% endif %}
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            {% if user.custom_claims and user.custom_claims.get('admin') %}
+                            <li>
+                                <a class="dropdown-item text-danger"
+                                    href="{{ url_for('main.remover_admin', uid=user.uid) }}"
+                                    onclick="return confirm('Remover privilégios admin?')">
+                                    <i class="bi bi-x-circle"></i> Remover Admin
+                                </a>
+                            </li>
+                            {% else %}
+                            <li>
+                                <a class="dropdown-item text-success"
+                                    href="{{ url_for('main.promover_admin', uid=user.uid) }}"
+                                    onclick="return confirm('Tornar este usuário admin?')">
+                                    <i class="bi bi-shield-check"></i> Tornar Admin
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+
+                            <li>
+                                <form method="POST" action="{{ url_for('main.toggle_status_usuario', uid=user.uid) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="dropdown-item">
+                                        <i class="bi bi-{% if user.disabled %}unlock{% else %}lock{% endif %}"></i>
+                                        {% if user.disabled %}Reativar{% else %}Desativar{% endif %}
+                                    </button>
+                                </form>
+                            </li>
+
+                            <li>
+                                <button class="dropdown-item" data-bs-toggle="modal"
+                                    data-bs-target="#confirmarExclusao{{ loop.index }}">
+                                    <i class="bi bi-trash3"></i> Excluir
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Modal de Confirmação -->
+                    <div class="modal fade" id="confirmarExclusao{{ loop.index }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-danger bg-gradient text-white">
+                                    <h5 class="modal-title">
+                                        <i class="bi bi-exclamation-octagon"></i> Confirmar Exclusão
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white"
+                                        data-bs-dismiss="modal"></button>
+                                </div>
+
+                                <div class="modal-body">
+                                    <p>Tem certeza que deseja excluir permanentemente:</p>
+                                    <ul>
+                                        <li>Usuário: <strong>{{ user.email }}</strong></li>
+                                        <li>UID: <code class="text-muted">{{ user.uid }}</code></li>
+                                    </ul>
+                                    <p class="text-danger">Esta ação é irreversível!</p>
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Cancelar</button>
+                                    <form method="POST" action="{{ url_for('main.excluir_usuario', uid=user.uid) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-outline-danger">
+                                            Confirmar Exclusão
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </td>
             </tr>
             {% endfor %}

@@ -820,6 +820,7 @@ def editar_transacao(id):
                          transacao=transacao, 
                          categorias=categorias)
 
+# Quando o próprio usuário deseja excluir sua conta
 def excluir_conta_usuario(user_id):
     try:
         db_firestore = firestore.client()
@@ -847,6 +848,51 @@ def excluir_conta_usuario(user_id):
         flash(f'Erro ao excluir conta: {str(e)}', 'danger')
     
     return redirect(url_for('main.perfil'))
+
+
+# Quando o admin deseja excluir conta de usuário
+@main_routes.route('/excluir-usuario/<uid>', methods=['POST'])
+@admin_required
+def excluir_usuario(uid):
+    try:
+        csrf.protect()
+        
+        # 1. Excluir do Firebase Auth
+        firebase_auth.delete_user(uid)
+        
+        # 2. Excluir dados do Firestore
+        db_firestore = firestore.client()
+        db_firestore.collection('usuarios').document(uid).delete()
+        
+        # 3. Excluir transações do SQL
+        Transacao.query.filter_by(user_id=uid).delete()
+        db.session.commit()
+        
+        flash('Usuário e todos os dados excluídos com sucesso', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao excluir usuário: {str(e)}', 'danger')
+    return redirect(url_for('main.admin_panel'))
+
+# Desativar ou ativa conta de usuário
+@main_routes.route('/toggle-status-usuario/<uid>', methods=['POST'])
+@admin_required
+def toggle_status_usuario(uid):
+    try:
+        csrf.protect()
+        user = firebase_auth.get_user(uid)
+        new_status = not user.disabled
+        
+        firebase_auth.update_user(
+            uid,
+            disabled=new_status
+        )
+        
+        status_msg = 'desativada' if new_status else 'reativada'
+        flash(f'Conta {status_msg} com sucesso', 'success')
+    except Exception as e:
+        flash(f'Erro ao alterar status: {str(e)}', 'danger')
+    return redirect(url_for('main.admin_panel'))
 
 @main_routes.route('/perfil', methods=['GET', 'POST'])
 @login_required
