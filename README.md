@@ -1,5 +1,5 @@
 
-# Flask Finances
+# Insight Finance
 
 Um sistema que realiza seu controle financeiro através de acompanhamentos diários e mensais dos seus lançamentos, aponta melhorias que poderiam ser realizadas e gera gráficos automaticamente com suas informações.
 
