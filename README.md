@@ -8,7 +8,7 @@ Um sistema que realiza seu controle financeiro através de acompanhamentos diár
 <div align="center">
   <img src="static/images/banner/login.png">
 </div>
-
+</br>
 
 # Pré-requisitos
 
