@@ -8,7 +8,8 @@
 
         <p>Prezado(a) {{ nome }},</p>
 
-        <p>Nosso sistema identificou que seu saldo atual está abaixo de 10% do valor total de receitas deste mês:</p>
+        <p>Nosso sistema identificou que seu saldo atual está abaixo de <strong>{{ meta }}%</strong> do valor total de
+            receitas deste mês:</p>
 
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <p><strong>Resumo Financeiro:</strong></p>
@@ -18,6 +19,12 @@
                 <li>❌ Despesas Totais: R$ {{ "%.2f"|format(despesas) }}</li>
             </ul>
         </div>
+
+        <!-- Adicione na seção de resumo -->
+        <p class="text-muted">
+            Meta configurada: {{ meta }}% |
+            Limite de alerta: R$ {{ "%.2f"|format(receitas * (meta/100)) }}
+        </p>
 
         <p><strong>Recomendações:</strong></p>
         <ul>

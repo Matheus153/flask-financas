@@ -72,6 +72,8 @@ def verificar_saldos(app):
             for user in users:
                 uid = user.uid
                 email = user.email
+                db_firestore = firestore.client()
+                user_doc = db_firestore.collection('usuarios').document(uid).get()
                 
                 # Calcular período do mês atual
                 hoje = datetime.now(br_tz)
@@ -82,6 +84,10 @@ def verificar_saldos(app):
                     Transacao.user_id == uid,
                     Transacao.data >= primeiro_dia_mes
                 ).all()
+
+                # Obter meta personalizada ou usar padrão 10%
+                user_data = user_doc.to_dict() if user_doc.exists else {}
+                meta_alerta = user_data.get('meta_alerta', 10.0)
                 
                 # Calcular totais
                 receitas = sum(t.valor for t in transacoes if t.tipo == 'receita')
@@ -89,13 +95,13 @@ def verificar_saldos(app):
                 saldo = receitas - despesas
                 
                 # Verificar condição de alerta
-                if receitas > 0 and saldo < (receitas * 0.1):
-                    enviar_alerta(email, user.display_name, receitas, despesas, saldo)
+                if receitas > 0 and saldo < (receitas * (meta_alerta / 100)):
+                    enviar_alerta(email, user.display_name, receitas, despesas, meta_alerta, saldo)
                     
         except Exception as e:
             print(f"Erro na verificação de saldos: {str(e)}")
 
-def enviar_alerta(destinatario, nome, receitas, despesas, saldo):
+def enviar_alerta(destinatario, nome, receitas, despesas, meta, saldo):
     # Criar contexto manualmente
     with current_app.app_context():
         
@@ -111,6 +117,7 @@ def enviar_alerta(destinatario, nome, receitas, despesas, saldo):
             receitas=receitas,
             despesas=despesas,
             saldo=saldo,
+            meta=meta,
             data=datetime.now(br_tz).strftime('%d/%m/%Y')
         )
         
@@ -126,7 +133,7 @@ scheduler_alerta.add_job(
     func=lambda: verificar_saldos(create_app()),
     trigger='cron',
     # day='last', (caso quisesse disparar no ultimo dia do mes)
-    hour=9,
+    hour=20,
     minute=0,
     timezone=br_tz
 )
@@ -174,7 +181,7 @@ def criar_transacao_recorrente():
         
         db.session.commit()
 
-# Agendador que roda diariamente às 00:01
+# Agendador que roda diariamente às 00:05
 scheduler_recorrentes = BackgroundScheduler(daemon=True)
 scheduler_recorrentes.add_job(
     func=criar_transacao_recorrente, 
@@ -905,6 +912,18 @@ def perfil():
         if request.method == 'POST':
             csrf.protect()
             
+            # Seção de atualização de meta
+            if 'definir_meta' in request.form:
+                nova_meta = float(request.form['meta_alerta'])
+                
+                if not (0 <= nova_meta <= 100):
+                    flash('A meta deve ser entre 0% e 100%', 'danger')
+                    return redirect(url_for('main.perfil'))
+                
+                user_ref.update({'meta_alerta': nova_meta})
+                flash('Meta de alerta atualizada com sucesso!', 'success')
+                return redirect(url_for('main.perfil'))
+            
             # Verificar se é exclusão de conta
             if 'delete_account' in request.form:
                 return excluir_conta_usuario(current_user.id)
@@ -933,9 +952,14 @@ def perfil():
         # Carregar dados atuais
         nome_atual = user_doc.get('full_name') if user_doc.exists else current_user.name
 
+        # Carregar dados atuais
+        user_data = user_doc.to_dict() if user_doc.exists else {}
+        meta_atual = user_data.get('meta_alerta', 10.0)  # Default 10%
+
         return render_template('perfil.html', 
                             nome_atual=nome_atual,
-                            provider=current_user.provider)
+                            provider=current_user.provider,
+                            meta_atual=meta_atual)
 
     except Exception as e:
         flash(f'Erro ao atualizar perfil: {str(e)}', 'danger')
