@@ -3,6 +3,13 @@
 
 Um sistema que realiza seu controle financeiro através de acompanhamentos diários e mensais dos seus lançamentos, aponta melhorias que poderiam ser realizadas e gera gráficos automaticamente com suas informações.
 
+# Banner
+
+<div align="center">
+  <img src="static/images/banner/login.png">
+</div>
+
+
 # Pré-requisitos
 
 - Git (https://git-scm.com/)
