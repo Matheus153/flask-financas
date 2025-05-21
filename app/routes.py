@@ -400,11 +400,6 @@ def login():
                 )
 
                 user_id = decoded_token['uid']
-                user = load_user(user_id)
-                login_user(user)
-
-                if user.primeiro_acesso:
-                    return redirect(url_for('main.tutorial'))
 
                 # Lógica de primeiro admin
                 if configurar_primeiro_admin(user_id):
@@ -412,6 +407,12 @@ def login():
                         user_id, 
                         {'admin': True}
                     )
+
+                user = load_user(user_id)
+                login_user(user)
+
+                if user.primeiro_acesso:
+                    return redirect(url_for('main.tutorial'))
 
                 flash('Login realizado com sucesso!', 'success')
                 return redirect(url_for('main.index'))
@@ -469,6 +470,11 @@ def login_social():
             
             if configurar_primeiro_admin(user_id):
                 user_ref.update({'admin': True})
+                firebase_auth.set_custom_user_claims(
+                        user_id, 
+                        {'admin': True}
+                    )
+
         else:
             user_ref.update(user_data)
 
