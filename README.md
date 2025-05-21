@@ -111,7 +111,37 @@ Acesse o Firebase **[Console](https://console.firebase.google.com/)**
 
 - Baixe o arquivo .json e preencha as variáveis de ambiente no arquivo .env
 
-#### 4. Banco de dados PostgreSQL
+#### 4. Configurando Firestore
+
+🏦 Para utilizar completamente a funcionalidade da aplicação configure o banco de dados Firebase chamado Firestore:
+Acesse o Firebase **[Console](https://console.firebase.google.com/)**
+
+Obs: para utilizar este recurso habilite a opção de faturamento da sua conta google.
+
+- Acesse a guia "Firestore Database"
+
+- Habilite o Cloud Firestore
+
+- Crie seu banco de dados
+
+- Ao criar seu banco de dados vá em "Regras" e substitua o código atual pelo seguinte:
+
+```bash
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /usuarios/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+  }
+}
+```
+- Publique suas alterações
+
+
+#### 5. Banco de dados PostgreSQL
 
 Obs: Primeiramente você deve ter um banco de dados criado no **[Supabase](https://supabase.com/)** ou qualquer outra que disponibilize gratuitamente como (Heroku ou Railway)
 
