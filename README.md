@@ -98,10 +98,6 @@ Obs: Primeiramente você deve criar ou já ter um projeto no firebase console
 
 - Cole na variável ("API_KEY" do arquivo .env)
 
-- Nas configurações do projeto, vá para a seção “Seus aplicativos”. 
-
-- Copie e cole os valores de 'messagingSenderId' e 'appId' nas variáveis de ambiente (MESSAGING_SENDER_ID, APP_ID)
-
 #### 3. SDK Admin Firebase
 
 🔧 Como Gerar Corretamente SDK Admin Firebase:

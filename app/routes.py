@@ -133,7 +133,7 @@ scheduler_alerta.add_job(
     func=lambda: verificar_saldos(create_app()),
     trigger='cron',
     # day='last', (caso quisesse disparar no ultimo dia do mes)
-    hour=9,
+    hour=20,
     minute=0,
     timezone=br_tz
 )
