@@ -191,9 +191,6 @@ scheduler_recorrentes.add_job(
     timezone=br_tz)
 scheduler_recorrentes.start()
 
-# Função para promover usuário a admin
-def make_admin(uid):
-    firebase_auth.set_custom_user_claims(uid, {'is_admin': True})
 
 def admin_required(func):
     @wraps(func)
@@ -220,6 +217,18 @@ def configurar_primeiro_admin(uid):
     transaction = db_firestore.transaction()
     return atualizar_config(transaction)
 
+def atualizar_firestore_admin(uid, is_admin):
+    """Atualiza o status de admin no Firestore"""
+    try:
+        db_firestore = firestore.client()
+        user_ref = db_firestore.collection('usuarios').document(uid)
+        user_ref.update({
+            'admin': is_admin,
+            'ultima_atualizacao_admin': firestore.SERVER_TIMESTAMP
+        })
+    except Exception as e:
+        current_app.logger.error(f"Erro ao atualizar Firestore: {str(e)}")
+
 @main_routes.route('/admin')
 @login_required
 @admin_required
@@ -239,7 +248,12 @@ def admin_panel():
 @admin_required
 def promover_admin(uid):
     try:
+         # Update Firebase Auth
         firebase_auth.set_custom_user_claims(uid, {'admin': True})
+
+        # Update Firestore
+        atualizar_firestore_admin(uid, True)
+
         flash('Usuário promovido a admin com sucesso!', 'success')
     except Exception as e:
         flash(f'Erro: {str(e)}', 'danger')
@@ -250,6 +264,9 @@ def promover_admin(uid):
 def remover_admin(uid):
     try:
         firebase_auth.set_custom_user_claims(uid, {'admin': None})
+
+        # Update Firestore
+        atualizar_firestore_admin(uid, False)
 
         # Atualiza o usuário local (opcional)
         user = firebase_auth.get_user(uid)
@@ -546,7 +563,8 @@ def cadastrar():
             usuarios_ref.document(user.uid).set({
                 'full_name': full_name,
                 'email': email,
-                'created_at': firestore.SERVER_TIMESTAMP
+                'created_at': firestore.SERVER_TIMESTAMP,
+                'admin': False
             })
 
             flash('Cadastro realizado com sucesso! Faça login.', 'success')
