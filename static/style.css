@@ -203,12 +203,50 @@ body {
     background: linear-gradient(135deg,rgb(33, 36, 41) 0%,rgb(54, 64, 81) 100%);
 }
 
+.bg-second-gradient {
+    background: linear-gradient(135deg,rgb(54, 64, 81) 0%,rgb(34, 41, 53) 100%);
+}
+
 .card-hover {
     transition: transform 0.2s;
 }
 
 .card-hover:hover {
     transform: translateY(-5px);
+}
+
+/* Estilos para o carrossel de login */
+#loginCarousel {
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.carousel-item {
+    transition: transform 1.5s ease-in-out;
+}
+
+.carousel-control-prev, .carousel-control-next {
+    width: 8%;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.carousel-control-prev-icon, 
+.carousel-control-next-icon {
+    filter: invert(1);
+    width: 2rem;
+    height: 2rem;
+}
+
+.carousel-indicators button {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin: 0 5px;
+    background-color: rgba(255, 255, 255, 0.5);
+    border: none;
+}
+
+.carousel-indicators .active {
+    background-color: white;
 }
 
 /* Floating Action Button */
